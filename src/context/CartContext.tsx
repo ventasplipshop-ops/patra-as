@@ -5,6 +5,7 @@ export interface CartItem {
   sku: string;
   nombre: string;
   precio: number;
+  precio_final?: number;
   cantidad: number;
 }
 

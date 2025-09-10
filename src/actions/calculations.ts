@@ -7,7 +7,7 @@ import type { CartItem } from "../context/CartContext";
  * Calcula el subtotal total del carrito.
  */
 export const calculateSubtotal = (items: CartItem[]): number => {
-  return items.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
+  return items.reduce((sum, item) => sum + ( item.precio_final ?? item.precio ) * item.cantidad, 0);
 };
 
 export const calculateTax = (subtotal: number, taxRate: number = 0): number => {

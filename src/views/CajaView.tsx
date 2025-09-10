@@ -152,7 +152,7 @@ useEffect(() => {
         sku: p.sku.toString(),
         nombre: p.nombre,
         cantidad: p.cantidad,
-        precio: p.precio,
+        precio: p.precio_final ?? p.precio,
       })),
       total,
       pagos: pagos.map((p) => ({   // 👈 nuevo
@@ -199,7 +199,7 @@ setTimeout(() => {
   const detalles = cart.map((item) => ({
     sku: item.sku.toString(),
     cantidad: item.cantidad,
-    precio_unitario: item.precio,
+    precio_unitario: item.precio_final ?? item.precio,
   }));
 
   const params = {
@@ -229,7 +229,7 @@ setTimeout(() => {
     const detalles = cart.map((item) => ({
       sku: item.sku.toString(),
       cantidad: item.cantidad,
-      precio_unitario: item.precio,
+      precio_unitario: item.precio_final ?? item.precio ,
     }));
 
     const params = {
@@ -274,7 +274,7 @@ setTimeout(() => {
     const detalles = cart.map((item) => ({
       sku: item.sku.toString(),
       cantidad: item.cantidad,
-      precio_unitario: item.precio,
+      precio_unitario: item.precio_final ?? item.precio,
     }));
 
     const params = {
@@ -464,10 +464,23 @@ setTimeout(() => {
                       />
                     </td>
                     <td className="py-2 px-2 text-right">
-                      ${p.precio.toLocaleString("es-AR")}
+                      <input
+                        type="number"
+                        min={0}
+                        value={p.precio_final ?? p.precio}
+                        onChange={(e) =>
+                          setCart((prev) =>
+                            prev.map((x) =>
+                              x.id === p.id ? { ...x, precio_final: Number(e.target.value) } : x
+                            )
+                          )
+                        }
+                        className="w-20 border rounded px-1 text-right"
+                      />
                     </td>
+
                     <td className="py-2 px-2 text-right">
-                      ${(p.precio * p.cantidad).toLocaleString("es-AR")}
+                      ${((p.precio_final ?? p.precio) * p.cantidad).toLocaleString("es-AR")}
                     </td>
                     <td className="py-2 px-2 text-right">
                       <button
