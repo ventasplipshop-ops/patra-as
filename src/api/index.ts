@@ -191,7 +191,9 @@ export async function getDrafts(): Promise<SaleDraft[]> {
       recepcion_at,
       entregado_at
     `)
+    .eq("estado", "Pendiente en deposito")
     .order("created_at", { ascending: false });
+    
 
   if (error) {
     console.error("❌ Error cargando borradores", error);
@@ -234,6 +236,7 @@ export async function saveDraft(draft: SaleDraft, userId: string) {
     p_total: draft.total,
     p_pagos: draft.pagos ?? [],
     p_created_by: userId,
+    p_estado: draft.estado ?? null,
   });
 
   if (error) {

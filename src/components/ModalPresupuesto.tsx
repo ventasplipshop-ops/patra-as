@@ -80,12 +80,13 @@ export default function PresupuestosModal({ open, onClose, onSelectPresupuesto }
   const fetchAllDrafts = async () => {
     setLoading(true);
 
-    const since = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    const since = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString();
 
     const { data, error } = await supabase
       .from("borradores")
       .select("id, cliente_id, cliente_nombre, cliente_apellido, cliente_telefono, cliente_direccion, items, total, created_at")
       .gte("created_at", since)
+      .eq("estado", "Borrador")
       .order("created_at", { ascending: false })
       .limit(10);
       

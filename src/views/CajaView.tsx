@@ -21,6 +21,8 @@ import { PaymentMethods } from "../components/PaymentMethods";
 import EffectsManager from "../components/effects/EffectsManager";
 import { useEffects } from "../components/effects/useEffects";
 import AperturaModal from "../components/AperturaModal";
+import { delay } from "framer-motion";
+import ImprimirEtiqueta from "../components/print/ImprimirEtiqueta";
 
 
 export default function CajaView({
@@ -67,8 +69,11 @@ export default function CajaView({
   const { effects, triggerEffect } = useEffects();
   const [presupuestoId, setPresupuestoId] = useState<number  | null>(null);
   const imprimirRef = useRef<{ print: () => void }>(null); 
+  const imprimirEtiquetaRef = useRef<{ print: () => void }>(null); 
 
   const [aperturaModalOpen, setAperturaModalOpen] = useState(false);
+
+  const [estadoDraft, setEstadoDraft] = useState<"Borrador" | "Pendiente en deposito" | "Presupuesto">("Pendiente en deposito");
 
   // pagos sincronizados
   const paymentOptions = [
@@ -133,63 +138,75 @@ useEffect(() => {
   };
 
   const resetCaja = () => {
-    setCart([]);
-    setCliente(null);
-    setPagos([]);
-    setDiscount(0);
-    setTaxType("sin_iva");
-    setSelectedMethod(null);
-    setTempAmount(0);
-    setResetKey((prev) => prev + 1);
-  };
-
-  // guardar borrador
-  const handleSaveDraft = async () => {
-    const draft: SaleDraft = {
-      clienteId: cliente?.id ?? "1",
-      items: cart.map((p) => ({
-        id: p.id.toString(),
-        sku: p.sku.toString(),
-        nombre: p.nombre,
-        cantidad: p.cantidad,
-        precio: p.precio_final ?? p.precio,
-      })),
-      total,
-      pagos: pagos.map((p) => ({   // 👈 nuevo
-        metodo: p.method,   // 👈 usamos method de Payment
-        monto: p.amount,
-      })),
-      createdAt: new Date().toISOString(),
-    };
-
-    const result = await performAction("saveDraft", {
-      draft,
-      userId: String(user?.id),
-    });
-    
-    
-    if (result.ok && "id" in result)  {
-        setPresupuestoId(result.id); // 👈 guardamos el UUID que devuelve el SQL
-        triggerEffect("confeti", 4000);
-        alert(`📄 Presupuesto guardado con ID ${result.id}`);
-        return result.id;          
-        
-      } else {
-        alert(`❌ Error al guardar presupuesto: ${result.error}`);
-      }
+  setCart([]);
+  setCliente(null);
+  setPagos([]);
+  setDiscount(0);
+  setTaxType("sin_iva");
+  setSelectedMethod(null);
+  setTempAmount(0);
+  setResetKey((prev) => prev + 1);
+  setEstadoDraft("Pendiente en deposito");     // 👈 resetea el estado
+  setPresupuestoId(null);         // 👈 limpia ID presupuesto
 };
 
+
+  // guardar borrador
+  const handleSaveDraft = async (estado: "Borrador" | "Pendiente en deposito" | "Presupuesto") => {
+  const draft: SaleDraft = {
+    clienteId: cliente?.id ?? "1",
+    items: cart.map((p) => ({
+      id: p.id.toString(),
+      sku: p.sku.toString(),
+      nombre: p.nombre,
+      cantidad: p.cantidad,
+      precio: p.precio_final ?? p.precio,
+    })),
+    total,
+    pagos: pagos.map((p) => ({
+      metodo: p.method,
+      monto: p.amount,
+    })),
+    createdAt: new Date().toISOString(),
+    estado, // 👈 viene del parámetro, no del state
+  };
+
+  const result = await performAction("saveDraft", {
+    draft,
+    userId: String(user?.id),
+  });
+
+  if (result.ok && "id" in result) {
+    setPresupuestoId(result.id);
+    triggerEffect("confeti", 4000);
+    alert(`📄 Presupuesto guardado con ID ${result.id}`);
+    setShowPaymentModal(false);
+    setTimeout(() => {
+      resetCaja();
+    }, 1000);
+    return result.id;
+  } else {
+    alert(`❌ Error al guardar presupuesto: ${result.error}`);
+  }
+};
+
+
   const handleSaveAndPrint = async () => {
-    const id = await handleSaveDraft();
+    
+    
+    setTimeout(() => {
+        setEstadoDraft("Pendiente en deposito");
+      }, 600);
+    const id = await handleSaveDraft(estadoDraft);
     if (!id) {
       alert("❌ No se pudo guardar el presupuesto.");
       return;
     }
     
-setTimeout(() => {
-    imprimirRef.current?.print();
-  }, 3000);
-  };
+    setTimeout(() => {
+        imprimirEtiquetaRef.current?.print();
+      }, 600);
+      };
 
 
   // registrar venta
@@ -349,6 +366,13 @@ setTimeout(() => {
           Consigna
         </button>
 
+        <button
+          onClick={() => handleSaveDraft("Borrador")}
+          className="px-3 py-2 rounded-lg border text-sm bg-gray-500 text-white"
+        >
+          💾 Guardar
+        </button>
+
         <ImprimirPresupuesto
         ref={imprimirRef} // 👈 aquí conectamos el ref
         customer={cliente}
@@ -358,8 +382,18 @@ setTimeout(() => {
         taxType={taxType}
         total={total}
         presupuestoId={presupuestoId}
-      />
-
+        />
+        
+        {/* boton oculto de imprimir etiqueta */}
+        <div style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
+          <ImprimirEtiqueta
+            ref={imprimirEtiquetaRef}
+            customer={cliente}
+            cartItems={cart}
+            borradorId={presupuestoId} 
+          />
+        </div>
+        
         {/* Cliente */}
         <div className="relative w-full max-w-xs md:max-w-sm">
           <label className="block text-xs font-medium mb-1">Cliente</label>
@@ -595,7 +629,8 @@ setTimeout(() => {
                         alert("⚠️ El cliente debe tener una dirección registrada.");
                         return;
                       }
-
+                      await setEstadoDraft ("Pendiente en deposito");
+                      await new Promise((resolve) => setTimeout(resolve, 300));
                       // ✅ Si pasa todas las validaciones
                       await handleSaveAndPrint();
                     }}

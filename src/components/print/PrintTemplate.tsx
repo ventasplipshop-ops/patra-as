@@ -49,7 +49,7 @@ export const PrintTemplate = React.forwardRef<HTMLDivElement, Omit<PrintTemplate
 
       <section className="grid grid-cols-2 gap-4 mt-3 p-2 border rounded text-xs">
         <div>
-          <p><strong>Cliente:</strong> {customer?.nombre ?? "—"}</p>
+          <p><strong>Cliente:</strong> {customer?.nombre ?? "—"} {customer?.apellido ?? ""}</p>
           <p><strong>Dirección:</strong> {customer?.direccion ?? "—"}</p>
           <p><strong>Teléfono:</strong> {customer?.telefono ?? "—"}</p>
         </div>
@@ -76,9 +76,9 @@ export const PrintTemplate = React.forwardRef<HTMLDivElement, Omit<PrintTemplate
               <td className="px-1 py-1">{p.sku?.toString().padStart(5, "0") ?? p.id}</td>
               <td className="px-1 py-1">{p.nombre}</td>
               <td className="px-1 py-1 text-right">{p.cantidad}</td>
-              <td className="px-1 py-1 text-right">{formatCurrency(p.precio)}</td>
+              <td className="px-1 py-1 text-right">{formatCurrency(p.precio_final ?? p.precio)}</td>
               <td className="px-1 py-1 text-right">
-                {formatCurrency(p.cantidad * p.precio)}
+                {formatCurrency(p.cantidad * (p.precio_final ?? p.precio))}
               </td>
             </tr>
           ))}
