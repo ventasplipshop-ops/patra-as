@@ -17,9 +17,16 @@ const herramientas = {
     { label: "Pendientes de compra", icon: <ClipboardList size={16} /> },
     { label: "Historial movimientos", icon: <History size={16} /> },
   ],
+  dashboard: [
+    { label: "Registrar pedido ML", icon: <Upload size={16} /> },
+    { label: "Gestionar pedidos ML", icon: <Download size={16} /> },
+    { label: "Ajuste de inventario", icon: <Wrench size={16} /> },
+    { label: "Pendientes de compra", icon: <ClipboardList size={16} /> },
+    { label: "Historial movimientos", icon: <History size={16} /> },
+  ],
 } as const;
 
-export default function RightToolsDrawer({ open, vista, onClose, onToolSelect, }: { open: boolean; vista: "caja" | "deposito"; onClose: () => void;  onToolSelect?: (label: string) => void; }) {
+export default function RightToolsDrawer({ open, vista, onClose, onToolSelect, }: { open: boolean; vista: "caja" | "deposito" | "dashboard"; onClose: () => void;  onToolSelect?: (label: string) => void; }) {
   const items = herramientas[vista];
 
   return (

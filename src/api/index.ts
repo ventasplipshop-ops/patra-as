@@ -710,3 +710,120 @@ export async function updatePedidoMLItems(
   });
   if (error) throw error;
 }
+
+
+
+/** ================================
+ *  MÉTRICAS DE VENTAS
+ *  ================================ */
+export async function fetchVentasDiarias() {
+  const { data, error } = await supabase
+    .from("ventas_diarias")
+    .select("*")
+    .order("fecha", { ascending: false });
+
+  if (error) {
+    console.error("❌ Error al obtener ventas_diarias:", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function fetchVentasDiariasOrigen() {
+  const { data, error } = await supabase
+    .from("ventas_diarias_origen")
+    .select("*")
+    .order("fecha", { ascending: false });
+
+  if (error) {
+    console.error("❌ Error al obtener ventas_diarias_origen:", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function fetchVentasPorHora() {
+  const { data, error } = await supabase
+    .from("ventas_por_hora")
+    .select("*")
+    .order("fecha", { ascending: false });
+
+  if (error) {
+    console.error("❌ Error al obtener ventas_por_hora:", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function fetchProductosPorMes() {
+  const { data, error } = await supabase
+    .from("productos_por_mes")
+    .select("*")
+    .order("mes", { ascending: false });
+
+  if (error) {
+    console.error("❌ Error al obtener productos_por_mes:", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function fetchPagosDiarios() {
+  const { data, error } = await supabase
+    .from("pagos_diarios")
+    .select("*")
+    .order("fecha", { ascending: false });
+
+  if (error) {
+    console.error("❌ Error al obtener pagos_diarios:", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function fetchClicksDiarios() {
+  const { data, error } = await supabase
+    .from("clicks_diarios")
+    .select("*")
+    .order("fecha", { ascending: false });
+
+  if (error) {
+    console.error("❌ Error al obtener clicks_diarios:", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+
+// directo a componente sin el tiunberasto
+
+export async function fetchVentasCompletas() {
+  const { data, error } = await supabase
+    .from("ventas")
+    .select(`
+      id,
+      created_at,
+      origen,
+      tipo_consumidor,
+      tipo_iva,
+      total,
+      observaciones,
+      cliente:clientes(nombre, apellido, telefono),
+      detalle_venta (
+        sku,
+        cantidad,
+        precio_unitario,
+        subtotal
+      ),
+      pagos (
+        metodo,
+        monto
+      )
+    `);
+
+  if (error) {
+    console.error("❌ Error al obtener ventas completas:", error.message);
+    return [];
+  }
+  return data ?? [];
+}

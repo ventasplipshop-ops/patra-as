@@ -267,6 +267,61 @@ registrarPedidoML: {
 };
 
 
+//
+/** ================================
+ *  MÉTRICAS DE VENTAS
+ *  ================================ */
+
+getVentasDiarias: {
+    args: void;
+    result:
+      | (ActionBaseResult & {
+          ok: true;
+          ventas: { fecha: string; cantidad_ventas: number; monto_total: number; ticket_promedio: number }[];
+        })
+      | (ActionBaseResult & { ok: false });
+  };
+
+  getVentasPorHora: {
+    args: void;
+    result:
+      | (ActionBaseResult & {
+          ok: true;
+          horas: { fecha: string; dia_semana: number; hora: number; cantidad_ventas: number; monto_total: number }[];
+        })
+      | (ActionBaseResult & { ok: false });
+  };
+
+  getProductosPorMes: {
+    args: void;
+    result:
+      | (ActionBaseResult & {
+          ok: true;
+          productos: { mes: string; sku: string; producto: string; total_unidades: number; total_vendido: number }[];
+        })
+      | (ActionBaseResult & { ok: false });
+  };
+
+  getPagosDiarios: {
+    args: void;
+    result:
+      | (ActionBaseResult & {
+          ok: true;
+          pagos: { fecha: string; metodo: string; total_monto: number; cantidad: number }[];
+        })
+      | (ActionBaseResult & { ok: false });
+  };
+
+  getClicksDiarios: {
+    args: void;
+    result:
+      | (ActionBaseResult & {
+          ok: true;
+          clicks: { fecha: string; button_name: string; cantidad: number }[];
+        })
+      | (ActionBaseResult & { ok: false });
+  };
+
 
 }
 

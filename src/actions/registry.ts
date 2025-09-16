@@ -1,6 +1,6 @@
 // src/actions/registry.ts
 import type { ActionRegistry, ActionHandler } from "./types";
-import { registrarVenta, registrarCliente, registrarCierreCaja, crearSugerencia, getDrafts, saveDraft, deleteDraft, fetchConsignas, fetchConsignaDetalle, addPagoConsigna, getTopProductosMes, fetchVentaCompleta, registrarDevolucion, modificarVenta, registrarClick, getCierreCaja, registrarAperturaCaja, getAperturaCaja, type AperturaCaja, updateDraftStatus, registrarPedidoML, getPedidosML, updatePedidoMLItems } from "../api";
+import { registrarVenta, registrarCliente, registrarCierreCaja, crearSugerencia, getDrafts, saveDraft, deleteDraft, fetchConsignas, fetchConsignaDetalle, addPagoConsigna, getTopProductosMes, fetchVentaCompleta, registrarDevolucion, modificarVenta, registrarClick, getCierreCaja, registrarAperturaCaja, getAperturaCaja, type AperturaCaja, updateDraftStatus, registrarPedidoML, getPedidosML, updatePedidoMLItems, fetchVentasDiarias, fetchVentasPorHora, fetchProductosPorMes, fetchPagosDiarios, fetchClicksDiarios } from "../api";
 
 const saveSale: ActionHandler<"saveSale"> = async (args) => {
   const id = await registrarVenta(args);
@@ -238,6 +238,61 @@ const updatePedidoMLItemsAction: ActionHandler<"updatePedidoMLItems"> = async ({
 
 
 
+/** ================================
+ *  MÉTRICAS DE VENTAS
+ *  ================================ */
+
+// Ventas diarias
+const getVentasDiariasAction: ActionHandler<"getVentasDiarias"> = async () => {
+  try {
+    const ventas = await fetchVentasDiarias();
+    return { ok: true, ventas };
+  } catch {
+    return { ok: false };
+  }
+};
+
+// Ventas por hora
+const getVentasPorHoraAction: ActionHandler<"getVentasPorHora"> = async () => {
+  try {
+    const horas = await fetchVentasPorHora();
+    return { ok: true, horas };
+  } catch {
+    return { ok: false };
+  }
+};
+
+// Productos por mes
+const getProductosPorMesAction: ActionHandler<"getProductosPorMes"> = async () => {
+  try {
+    const productos = await fetchProductosPorMes();
+    return { ok: true, productos };
+  } catch {
+    return { ok: false };
+  }
+};
+
+// Pagos diarios
+const getPagosDiariosAction: ActionHandler<"getPagosDiarios"> = async () => {
+  try {
+    const pagos = await fetchPagosDiarios();
+    return { ok: true, pagos };
+  } catch {
+    return { ok: false };
+  }
+};
+
+// Clicks diarios
+const getClicksDiariosAction: ActionHandler<"getClicksDiarios"> = async () => {
+  try {
+    const clicks = await fetchClicksDiarios();
+    return { ok: true, clicks };
+  } catch {
+    return { ok: false };
+  }
+};
+
+
 
 
 
@@ -265,5 +320,9 @@ export const ACTIONS: ActionRegistry = {
   registrarPedidoML: registrarPedidoMLAction,
   getPedidosML: getPedidosMLAction,
   updatePedidoMLItems: updatePedidoMLItemsAction,
-
+  getVentasDiarias: getVentasDiariasAction,
+  getVentasPorHora: getVentasPorHoraAction,
+  getProductosPorMes: getProductosPorMesAction,
+  getPagosDiarios: getPagosDiariosAction,
+  getClicksDiarios: getClicksDiariosAction,
 };

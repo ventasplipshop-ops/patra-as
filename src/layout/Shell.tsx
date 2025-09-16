@@ -13,9 +13,10 @@ import RegistrarPedidoMLModal from "../components/RegistrarPedidoMLModal";
 import GestionPedidosMLModal from "../components/GestionPedidosMLModal";
 import CierreCajaModal from "../components/CierreCajaModal";
 import ClienteModal from "../components/CustomerModal";
+import DashboardView from "../views/DashboardView";
 
 
-type Vista = "caja" | "deposito";
+type Vista = "caja" | "deposito" | "dashboard";
 
 export default function Shell() {
   const [vista, setVista] = useState<Vista>("caja");
@@ -49,12 +50,11 @@ export default function Shell() {
                 onClosePresupuestos={() => setOpenPresupuestos(false)}
                 
               />
-            ) : (
-              <DepositoView 
-              
-              
-              />
-            )}
+            ) : vista === "deposito" ? (
+              <DepositoView />
+            ) : vista === "dashboard" ? (
+              <DashboardView />
+            ) : null}
           </div>
 
           {/* Botón para abrir/cerrar herramientas */}
