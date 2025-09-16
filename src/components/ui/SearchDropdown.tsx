@@ -96,16 +96,20 @@ export default function SearchDropdown({ resources, placeholder, onSelect }: Sea
       {loading && <p className="absolute top-full mt-1 text-sm text-gray-500">Buscando...</p>}
 
       {allRows.length > 0 && (
-        <ul className="absolute z-10 w-full bg-black border rounded mt-1 max-h-60 overflow-auto shadow-lg">
+        <ul className="absolute z-10 w-full bg-white dark:bg-gray-800 border rounded mt-1 max-h-60 overflow-auto shadow-lg">
           {allRows.map(({ row, table }, i) => (
             <li
               key={`${table}-${i}`}
               className={`p-2 cursor-pointer ${
-                i === highlightIndex ? "bg-blue-100" : "hover:bg-gray-100"
+                i === highlightIndex
+                  ? "bg-blue-100 dark:bg-blue-900"
+                  : "hover:bg-gray-100 dark:hover:bg-gray-700"
               }`}
               onClick={() => handleSelect(row, table)}
             >
-              {row.nombre || row.sku || JSON.stringify(row)}
+              <span className="text-gray-800 dark:text-gray-100">
+                {row.nombre || row.sku || JSON.stringify(row)}
+              </span>
             </li>
           ))}
         </ul>
