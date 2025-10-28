@@ -279,12 +279,34 @@ useEffect(() => {
 
   // cargar borrador en la vista
   const handleLoadDraft = (draft: SaleDraft) => {
+    console.log("📦 Cargando borrador:", draft);
+
     if (draft.clienteId) {
-      setCliente({ id: draft.clienteId, nombre: draft.clienteNombre });
+      setCliente({
+        id: draft.clienteId,
+        nombre: draft.clienteNombre ?? "Cliente sin nombre",
+        telefono: draft.clienteTelefono ?? "",
+      });
       setClienteId(draft.clienteId);
     }
-    setCart(draft.items); // ✅ directo, porque ya viene en el formato correcto
+
+    if (Array.isArray(draft.items) && draft.items.length > 0) {
+      setCart(
+        draft.items.map((i) => ({
+          id: String(i.id ?? ""), // ✅ convertir a string
+          sku: String(i.sku ?? ""),
+          nombre: i.nombre ?? "Producto sin nombre",
+          cantidad: Number(i.cantidad ?? 1),
+          precio: Number(i.precio ?? 0),
+        }))
+      );
+    } else {
+      console.warn("⚠️ Este borrador no tiene items.");
+      setCart([]);
+    }
   };
+
+
 
   // hanle cargar o guardar consigna
   const handleRegistrarConsigna = async () => {

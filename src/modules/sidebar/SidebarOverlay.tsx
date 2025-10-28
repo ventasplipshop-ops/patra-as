@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Boxes, ChevronLeft, ShoppingBag } from "lucide-react";
 
-type Vista = "caja" | "deposito" | "dashboard";
+type Vista = "caja" | "deposito" | "dashboard" | "inventario";
 
 export default function SidebarOverlay({
   open,
@@ -71,9 +71,17 @@ export default function SidebarOverlay({
                   vistaActual === "dashboard" ? "bg-gray-100 dark:bg-gray-700" : ""
                 }`}
               >
-
                 <Boxes size={18} />
                 <span>Dashboard</span>
+              </button>
+              <button
+                onClick={() => onSelectVista("inventario")}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                  vistaActual === "dashboard" ? "bg-gray-100 dark:bg-gray-700" : ""
+                }`}
+              >
+                <Boxes size={18} />
+                <span>Inventario</span>
               </button>
             </nav>
           </motion.aside>

@@ -14,9 +14,11 @@ import GestionPedidosMLModal from "../components/GestionPedidosMLModal";
 import CierreCajaModal from "../components/CierreCajaModal";
 import ClienteModal from "../components/CustomerModal";
 import DashboardView from "../views/DashboardView";
+import InventarioView from "../views/InventarioView";
+import RegistrarProductoModal from "../components/RegistrarProductoModal";
 
 
-type Vista = "caja" | "deposito" | "dashboard";
+type Vista = "caja" | "deposito" | "dashboard" | "inventario";
 
 export default function Shell() {
   const [vista, setVista] = useState<Vista>("caja");
@@ -30,6 +32,7 @@ export default function Shell() {
   const [gestionarMLOpen, setGestionarMLOpen] = useState(false);
   const [CierreCajaOpen, setCierreCajaOpen] = useState(false);
   const [CustomerModalOpen, setCustomerModalOpen] = useState(false);
+  const [RegistrarProductoOpen, setRegistrarProductoOpen] = useState(false);
 
 
   return (
@@ -54,6 +57,8 @@ export default function Shell() {
               <DepositoView />
             ) : vista === "dashboard" ? (
               <DashboardView />
+            ) :  vista === "inventario" ? (
+              <InventarioView />
             ) : null}
           </div>
 
@@ -83,6 +88,7 @@ export default function Shell() {
               if (tool === "Gestionar pedidos ML") setGestionarMLOpen(true);
               if (tool === "Cierre de caja") setCierreCajaOpen(true);
               if (tool === "Agregar cliente") setCustomerModalOpen(true);
+              if (tool === "Registrar producto") setRegistrarProductoOpen(true);
               
             }}
           />
@@ -92,6 +98,8 @@ export default function Shell() {
           <GestionPedidosMLModal open={gestionarMLOpen} onClose={() => setGestionarMLOpen(false)}/>
           <CierreCajaModal open={CierreCajaOpen} onClose= {() => setCierreCajaOpen(false)} />
             <ClienteModal open={CustomerModalOpen} onClose= {() => setCustomerModalOpen(false)} />
+            <RegistrarProductoModal open={RegistrarProductoOpen} onClose={() => setRegistrarProductoOpen(false)} />
+
           {/* Drawer inferior para historial */}
           <BottomHistoryDrawer
             open={vista === "caja" && historyOpen}
