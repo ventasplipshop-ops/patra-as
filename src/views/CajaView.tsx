@@ -477,7 +477,7 @@ useEffect(() => {
                       setShowPaymentModal(true)}}
                 className="px-3 py-2 rounded-lg border text-sm"
               >
-                💳 Cerrar Venta
+                💳 Cerrar Venta puto
               </button>
             </div>            
           </div>
