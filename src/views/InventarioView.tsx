@@ -9,6 +9,7 @@ interface InventarioItem {
   stock: number;
   precio: number;
   updated_at: string | null;
+  link: string | null;
 }
 
 export default function InventarioView() {
@@ -28,7 +29,7 @@ export default function InventarioView() {
 
     const { data, error } = await supabase
       .from("inventario")
-      .select("id, sku, nombre, stock, precio, updated_at")
+      .select("id, sku, nombre, stock, precio, updated_at, link")
       .order("updated_at", { ascending: false });
 
     if (error) {
@@ -66,6 +67,25 @@ export default function InventarioView() {
     alert("✅ Inventario actualizado correctamente");
     setEditando(null);
     fetchInventario();
+  };
+
+  const actualizarCampo = async (
+    id: number,
+    campo: string,
+    valor: string | number
+  ) => {
+    const { error } = await supabase
+      .from("inventario")
+      .update({
+        [campo]: valor,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+
+    if (error) {
+      console.error("❌ Error actualizando campo:", error.message);
+      alert("Error al guardar");
+    }
   };
 
   // =============================
@@ -115,6 +135,7 @@ export default function InventarioView() {
               <th className="p-2 border text-right">Stock</th>
               <th className="p-2 border text-right">Precio</th>
               <th className="p-2 border text-center">Acciones</th>
+              <th className="p-2 border text-center">Link</th>
             </tr>
           </thead>
           <tbody>
@@ -132,6 +153,7 @@ export default function InventarioView() {
               filtrados.map((item) => (
                 <tr key={item.id} className="border-t hover:bg-gray-50 dark:hover:bg-gray-700">
                   
+                  {/* NOMBRE */}
                   <td className="p-2">
                     {editando === item.id ? (
                       <input
@@ -144,6 +166,8 @@ export default function InventarioView() {
                       item.nombre ?? "—"
                     )}
                   </td>
+
+                  {/* STOCK */}
                   <td className="p-2 text-right">
                     {editando === item.id ? (
                       <input
@@ -156,6 +180,8 @@ export default function InventarioView() {
                       item.stock
                     )}
                   </td>
+
+                  {/* PRECIO */}
                   <td className="p-2 text-right">
                     {editando === item.id ? (
                       <input
@@ -169,6 +195,8 @@ export default function InventarioView() {
                       `$${item.precio}`
                     )}
                   </td>
+
+                  {/* ACCIONES */}
                   <td className="p-2 text-center">
                     {editando === item.id ? (
                       <div className="flex justify-center gap-2">
@@ -199,7 +227,24 @@ export default function InventarioView() {
                       </button>
                     )}
                   </td>
+
+                  {/* 🔥 LINK — editable inline */}
+                  <td className="p-2 text-center">
+                    <input
+                      type="text"
+                      defaultValue={item.link ?? ""}
+                      className="w-full border rounded px-2 py-1 text-xs"
+                      placeholder="https://..."
+                      onBlur={(e) => actualizarCampo(item.id, "link", e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.currentTarget.blur(); // dispara el guardado
+                        }
+                      }}
+                    />
+                  </td>
                 </tr>
+
               ))
             )}
           </tbody>
