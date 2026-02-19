@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { RefreshCw, Search, Edit3, Check, X } from "lucide-react";
+import Button from "../components/ui/Button";
 
 interface InventarioItem {
   id: number;
@@ -12,6 +13,16 @@ interface InventarioItem {
   link: string | null;
 }
 
+export type NivelStock = "BAJO" | "MEDIO" | "ALTO"
+
+export function calcularNivelStock(stock: number): NivelStock {
+  if (stock <= 5) return "BAJO"
+  if (stock <= 20) return "MEDIO"
+  return "ALTO"
+}
+
+
+
 export default function InventarioView() {
   const [items, setItems] = useState<InventarioItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -20,6 +31,51 @@ export default function InventarioView() {
   const [nuevoNombre, setNuevoNombre] = useState<string>("");
   const [nuevoStock, setNuevoStock] = useState<number>(0);
   const [nuevoPrecio, setNuevoPrecio] = useState<number>(0);
+  const [filtroStock, setFiltroStock] = useState<NivelStock | null>(null)
+  const [selectedItems, setSelectedItems] = useState<InventarioItem[]>([])
+
+
+  function toggleSeleccion(item: InventarioItem) {
+    const yaSeleccionado = selectedItems.some(i => i.id === item.id)
+
+    if (yaSeleccionado) {
+      setSelectedItems(selectedItems.filter(i => i.id !== item.id))
+    } else {
+      setSelectedItems([...selectedItems, item])
+    }
+  }
+
+    
+    const resumenStock = items.reduce(
+    (acc, item) => {
+      const nivel = calcularNivelStock(item.stock)
+
+      acc[nivel] += 1
+      return acc
+    },
+    { BAJO: 0, MEDIO: 0, ALTO: 0 }
+  )
+
+const itemsFiltrados = items.filter((i) => {
+  const coincideBusqueda =
+    i.sku.toLowerCase().includes(busqueda.toLowerCase()) ||
+    (i.nombre ?? "").toLowerCase().includes(busqueda.toLowerCase());
+
+  const coincideStock =
+    !filtroStock ||
+    calcularNivelStock(i.stock) === filtroStock;
+
+  return coincideBusqueda && coincideStock;
+});
+
+
+  function seleccionarTodos() {
+    setSelectedItems(itemsFiltrados)
+  }
+
+  function deseleccionarTodos() {
+    setSelectedItems([])
+  }
 
   // =============================
   // 🔄 Cargar inventario
@@ -88,14 +144,34 @@ export default function InventarioView() {
     }
   };
 
-  // =============================
-  // 🔍 Filtro
-  // =============================
-  const filtrados = items.filter(
-    (i) =>
-      i.sku.toLowerCase().includes(busqueda.toLowerCase()) ||
-      (i.nombre ?? "").toLowerCase().includes(busqueda.toLowerCase())
-  );
+
+
+  function generarCSVInventario(items: InventarioItem[]) {
+    const headers = ["SKU", "Nombre", "Stock", "Precio"]
+
+    const rows = items.map(item => [
+      item.sku,
+      item.nombre ?? "",
+      item.stock,
+      item.precio
+    ])
+
+    return [headers, ...rows]
+      .map(row => row.join(","))
+      .join("\n")
+  }
+
+  function descargarCSV(nombreArchivo: string, contenido: string) {
+    const blob = new Blob([contenido], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+
+    const link = document.createElement("a")
+    link.href = url
+    link.setAttribute("download", nombreArchivo)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   // =============================
   // 🧱 UI
@@ -111,6 +187,7 @@ export default function InventarioView() {
         >
           <RefreshCw size={16} /> Actualizar
         </button>
+
       </header>
 
       {/* Buscador */}
@@ -125,12 +202,60 @@ export default function InventarioView() {
         />
       </div>
 
+        <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+
+          <Button onClick={() => setFiltroStock("BAJO")}>
+            🔴 Bajo ({resumenStock.BAJO})
+          </Button>
+
+          <Button onClick={() => setFiltroStock("MEDIO")}>
+            🟡 Medio ({resumenStock.MEDIO})
+          </Button>
+
+          <Button onClick={() => setFiltroStock("ALTO")}>
+            🟢 Alto ({resumenStock.ALTO})
+          </Button>
+
+          <Button onClick={() => setFiltroStock(null)}>
+            👁 Ver todos
+          </Button>
+          <Button
+            type="button"
+            disabled={selectedItems.length === 0}
+            onClick={() => {
+              const csv = generarCSVInventario(selectedItems)
+              descargarCSV("inventario_seleccionado.csv", csv)
+            }}
+          >
+            👐 Descargar seleccionados ({selectedItems.length})
+          </Button>
+          <Button
+            type="button"
+            onClick={seleccionarTodos}
+            disabled={itemsFiltrados.length === 0}
+          >
+            ✅ Seleccionar todos
+          </Button>
+
+          <Button
+            type="button"
+            onClick={deseleccionarTodos}
+            disabled={selectedItems.length === 0}
+          >
+            ❌ Deseleccionar todos
+          </Button>
+        </div>
+        
+
+
+
       {/* Tabla */}
       <div className="flex-1 overflow-auto border rounded-xl bg-white dark:bg-gray-800">
         <table className="w-full text-sm border-collapse">
           <thead className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+            
             <tr>
-              
+              <th>Sel</th>
               <th className="p-2 border">Nombre</th>
               <th className="p-2 border text-right">Stock</th>
               <th className="p-2 border text-right">Precio</th>
@@ -143,16 +268,23 @@ export default function InventarioView() {
               <tr>
                 <td colSpan={5} className="text-center py-4">⏳ Cargando...</td>
               </tr>
-            ) : filtrados.length === 0 ? (
+            ) : itemsFiltrados.length === 0 ? (
               <tr>
                 <td colSpan={5} className="text-center py-4 text-gray-400">
                   Sin resultados
                 </td>
               </tr>
             ) : (
-              filtrados.map((item) => (
+              itemsFiltrados.map((item) => (
                 <tr key={item.id} className="border-t hover:bg-gray-50 dark:hover:bg-gray-700">
-                  
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedItems.some(i => i.id === item.id)}
+                      onChange={() => toggleSeleccion(item)}
+                    />
+                  </td>
+
                   {/* NOMBRE */}
                   <td className="p-2">
                     {editando === item.id ? (

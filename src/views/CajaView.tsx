@@ -23,6 +23,8 @@ import { useEffects } from "../components/effects/useEffects";
 import AperturaModal from "../components/AperturaModal";
 import { delay } from "framer-motion";
 import ImprimirEtiqueta from "../components/print/ImprimirEtiqueta";
+import { supabase } from "../lib/supabase";
+import Button from "../components/ui/Button";
 
 
 export default function CajaView({
@@ -36,6 +38,10 @@ export default function CajaView({
 }) {
   const { cart, addItem, removeItem, updateQty, setCart, setClienteId } = useCart();
   const [cliente, setCliente] = useState<any | null>(null);
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [nota, setNota] = useState("");
+  const [guardandoNota, setGuardandoNota] = useState(false);
+
 
   // valores por defecto
   const [origen, setOrigen] = useState<"Puerta" | "Web" | "Redes" | "Mercado_libre">("Puerta");
@@ -94,6 +100,34 @@ export default function CajaView({
     setShowPaymentModal(true);
   };
 
+async function guardarNota() {
+  if (!nota.trim()) return;
+
+  setGuardandoNota(true);
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { error } = await supabase.from("sugerencias").insert([
+    {
+      user_id: user?.id ?? null,
+      nota,
+      contexto: {
+        pantalla: "Puterios"
+      }
+    }
+  ]);
+
+  setGuardandoNota(false);
+
+  if (!error) {
+    setNota("");
+    setModalAbierto(false);
+  } else {
+    console.error(error);
+  }
+}
+
+  
 
 useEffect(() => {
   if (!user?.id) return;
@@ -394,6 +428,14 @@ useEffect(() => {
         >
           💾 Guardar
         </button>
+
+        <Button
+          type="button"
+          onClick={() => setModalAbierto(true)}
+        >
+          😇Anotar 😣Anotaciones 😂 Anotadas
+        </Button>
+
 
         <ImprimirPresupuesto
         ref={imprimirRef} // 👈 aquí conectamos el ref
@@ -702,6 +744,55 @@ useEffect(() => {
         </div>
       </section>
     </div>
+    {modalAbierto && (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1000
+        }}
+      >
+        <div
+          style={{
+            background: "white",
+            padding: 20,
+            borderRadius: 8,
+            width: 400
+          }}
+        >
+          <h3>Agregar nota</h3>
+
+          <textarea
+            value={nota}
+            onChange={(e) => setNota(e.target.value)}
+            rows={4}
+            style={{ width: "100%", marginBottom: 12 }}
+          />
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => setModalAbierto(false)}
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              onClick={guardarNota}
+              disabled={guardandoNota}
+            >
+              {guardandoNota ? "Guardando..." : "Guardar"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     </div>
   );
 }
