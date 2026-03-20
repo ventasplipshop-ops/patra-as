@@ -191,7 +191,7 @@ export async function getDrafts(): Promise<SaleDraft[]> {
       recepcion_at,
       entregado_at
     `)
-    .eq("estado", "Pendiente en deposito")
+    .in("estado", ["Pendiente en deposito", "Preventa"])
     .order("created_at", { ascending: false });
     
 

@@ -73,7 +73,64 @@ export default function CajaView({
 
   const [aperturaModalOpen, setAperturaModalOpen] = useState(false);
 
-  const [estadoDraft, setEstadoDraft] = useState<"Borrador" | "Pendiente en deposito" | "Presupuesto">("Pendiente en deposito");
+  const [estadoDraft, setEstadoDraft] = useState<"Borrador" | "Pendiente en deposito" | "Presupuesto" | "Preventa">("Pendiente en deposito");
+
+  const aplicarDescuentoGeneral = (porcentaje: number) => {
+    let totalDescuento = 0;
+
+    setCart((prev) =>
+      prev.map((item) => {
+        const base = item.precio_final ?? item.precio;
+        const nuevoPrecio = Math.round(base * (1 - porcentaje));
+
+        totalDescuento += (base - nuevoPrecio) * item.cantidad;
+
+        return {
+          ...item,
+          precio_final: nuevoPrecio,
+        };
+      })
+    );
+
+    setDiscount((prev) => prev + totalDescuento);
+  };
+
+const aplicarDescuentoItem = (id: string, porcentaje: number) => {
+  let descuentoItem = 0;
+
+  setCart((prev) =>
+    prev.map((item) => {
+      if (item.id !== id) return item;
+
+      const base = item.precio_final ?? item.precio;
+      const nuevoPrecio = Math.round(base * (1 - porcentaje));
+
+      descuentoItem = (base - nuevoPrecio) * item.cantidad;
+
+      return {
+        ...item,
+        precio_final: nuevoPrecio,
+      };
+    })
+  );
+
+  setDiscount((prev) => prev + descuentoItem);
+};
+
+useEffect(() => {
+  let nuevoDiscount = 0;
+
+  cart.forEach((item) => {
+    const original = item.precio;
+    const actual = item.precio_final ?? item.precio;
+
+    if (actual < original) {
+      nuevoDiscount += (original - actual) * item.cantidad;
+    }
+  });
+
+  setDiscount(nuevoDiscount);
+}, [cart]);
 
   // pagos sincronizados
   const paymentOptions = [
@@ -152,7 +209,7 @@ useEffect(() => {
 
 
   // guardar borrador
-  const handleSaveDraft = async (estado: "Borrador" | "Pendiente en deposito" | "Presupuesto") => {
+  const handleSaveDraft = async (estado: "Borrador" | "Pendiente en deposito" | "Presupuesto"  | "Preventa") => {
   const draft: SaleDraft = {
     clienteId: cliente?.id ?? "1",
     items: cart.map((p) => ({
@@ -190,6 +247,18 @@ useEffect(() => {
   }
 };
 
+const handlePreventa = async () => {
+  const id = await handleSaveDraft("Preventa");
+
+  if (!id) {
+    alert("❌ No se pudo guardar la preventa.");
+    return;
+  }
+
+  setTimeout(() => {
+    imprimirEtiquetaRef.current?.print();
+  }, 600);
+};
 
   const handleSaveAndPrint = async () => {
     
@@ -395,6 +464,10 @@ useEffect(() => {
           💾 Guardar
         </button>
 
+
+
+
+
         <ImprimirPresupuesto
         ref={imprimirRef} // 👈 aquí conectamos el ref
         customer={cliente}
@@ -545,6 +618,12 @@ useEffect(() => {
                       >
                         Quitar
                       </button>
+                      <button
+                        onClick={() => aplicarDescuentoItem(p.id, 0.15)}
+                        className="px-2 py-1 rounded-lg border text-xs bg-red-500 text-white"
+                      >
+                        -15%
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -581,7 +660,7 @@ useEffect(() => {
             </div>
 
           </div>
-          <div className="flex justify-between items-center">
+          {/* <div className="flex justify-between items-center">
             <label className="text-sm">Descuento:</label>
             <input
               type="number"
@@ -590,8 +669,27 @@ useEffect(() => {
               className="w-20 border rounded px-2 py-1 text-right text-sm"
               placeholder="0"
             />
-          </div>
-
+            
+          </div> */}
+          <button
+            onClick={() => aplicarDescuentoGeneral(0.15)}
+            className="px-1 py-1 rounded-lg border text-xs bg-red-600 text-white"
+          >
+            🔻 -15% Todo
+          </button>
+                    <button
+            onClick={() => aplicarDescuentoGeneral(0.25)}
+            className="px-1 py-1 rounded-lg border text-xs bg-red-600 text-white"
+          >
+            🔻 -25% Todo
+          </button>
+                    <button
+            onClick={() => aplicarDescuentoGeneral(0.50)}
+             title="Claro esta verga no la tocas ni en pedo verdad, tranquilo gordo que este boton esta de adorno –😛- PD: faltan resmas"
+            className="px-1 py-1 rounded-lg border text-xs bg-red-600 text-white"
+          >
+            🔻 -50% Todo
+          </button>
           {/* Modal de presupuestos */}
           <PresupuestosModal
             open={openPresupuestos}
@@ -659,6 +757,31 @@ useEffect(() => {
                     className="px-3 py-2 rounded-lg border bg-green-600 text-white"
                   >
                     👉 📦 Enviar a Depósito
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (cart.length === 0) {
+                        alert("⚠️ Debe registrar al menos un producto antes de enviar a depósito.");
+                        return;
+                      }
+
+                      if (!cliente) {
+                        alert("⚠️ Debe seleccionar un cliente antes de enviar a depósito.");
+                        return;
+                      }
+
+                      if (!cliente.direccion || cliente.direccion.trim() === "") {
+                        alert("⚠️ El cliente debe tener una dirección registrada.");
+                        return;
+                      }
+                      await setEstadoDraft ("Preventa");
+                      await new Promise((resolve) => setTimeout(resolve, 300));
+                      // ✅ Si pasa todas las validaciones
+                      await handlePreventa();
+                    }}
+                    className="px-3 py-2 rounded-lg border text-sm bg-blue-600 text-white"
+                  >
+                    🧾 Preventa
                   </button>
                   <button
                     onClick={async () => {
