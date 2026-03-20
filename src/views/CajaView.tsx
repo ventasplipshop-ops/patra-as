@@ -98,7 +98,7 @@ export default function CajaView({
       })
     );
 
-    setDiscount((prev) => prev + totalDescuento);
+    
   };
 
 const aplicarDescuentoItem = (id: string, porcentaje: number) => {
@@ -120,7 +120,7 @@ const aplicarDescuentoItem = (id: string, porcentaje: number) => {
     })
   );
 
-  setDiscount((prev) => prev + descuentoItem);
+  
 };
 
 
