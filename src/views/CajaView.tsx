@@ -98,7 +98,7 @@ export default function CajaView({
       })
     );
 
-    
+    setDiscount((prev) => prev + totalDescuento);
   };
 
 const aplicarDescuentoItem = (id: string, porcentaje: number) => {
@@ -120,23 +120,9 @@ const aplicarDescuentoItem = (id: string, porcentaje: number) => {
     })
   );
 
-  
+  setDiscount((prev) => prev + descuentoItem);
 };
 
-useEffect(() => {
-  let nuevoDiscount = 0;
-
-  cart.forEach((item) => {
-    const original = item.precio;
-    const actual = item.precio_final ?? item.precio;
-
-    if (actual < original) {
-      nuevoDiscount += (original - actual) * item.cantidad;
-    }
-  });
-
-  setDiscount(nuevoDiscount);
-}, [cart]);
 
   // pagos sincronizados
   const paymentOptions = [
