@@ -497,12 +497,12 @@ const handlePreventa = async () => {
         >
           💾 Guardar
         </button>
-<Button
-  type="button"
-  onClick={() => setModalAbierto(true)}
->
-  😇Anotar 😣Anotaciones 😂 Anotadas
-</Button>
+        <Button
+          type="button"
+          onClick={() => setModalAbierto(true)}
+        >
+          😇Anotar 😣Anotaciones 😂 Anotadas
+        </Button>
 
         <ImprimirPresupuesto
         ref={imprimirRef} // 👈 aquí conectamos el ref
