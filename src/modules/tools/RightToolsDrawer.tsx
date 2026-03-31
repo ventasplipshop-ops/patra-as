@@ -25,6 +25,10 @@ const herramientas = {
     { label: "Registrar producto", icon: <Upload size={16} /> },
 
   ],
+    leads: [
+    { label: "Ver tablero", icon: <Upload size={16} /> },
+    { label: "Actualizar leads", icon: <Upload size={16} /> }
+  ]
 } as const;
 
 export default function RightToolsDrawer({ open, vista, onClose, onToolSelect, }: { open: boolean; vista: "caja" | "deposito" | "dashboard" | "inventario" | "leads"; onClose: () => void;  onToolSelect?: (label: string) => void; }) {
