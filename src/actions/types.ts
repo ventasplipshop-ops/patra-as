@@ -322,6 +322,22 @@ getVentasDiarias: {
       | (ActionBaseResult & { ok: false });
   };
 
+  getLeadsBoard: {
+    args: void;
+    result:
+      | (ActionBaseResult & {
+          ok: true;
+          board: Record<string, any[]>;
+        })
+      | (ActionBaseResult & { ok: false });
+  };
+
+  moveLead: {
+    args: { id: number; estado: string };
+    result:
+      | (ActionBaseResult & { ok: true })
+      | (ActionBaseResult & { ok: false; error: string });
+  };
 
 }
 

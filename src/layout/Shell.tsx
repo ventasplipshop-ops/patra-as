@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { use, useState } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
 import SidebarOverlay from "../modules/sidebar/SidebarOverlay";
@@ -16,9 +16,10 @@ import ClienteModal from "../components/CustomerModal";
 import DashboardView from "../views/DashboardView";
 import InventarioView from "../views/InventarioView";
 import RegistrarProductoModal from "../components/RegistrarProductoModal";
+import LeadsBoardView from "../views/LeadsBoardView";
 
 
-type Vista = "caja" | "deposito" | "dashboard" | "inventario";
+type Vista = "caja" | "deposito" | "dashboard" | "inventario" | "leads";
 
 export default function Shell() {
   const [vista, setVista] = useState<Vista>("caja");
@@ -33,6 +34,8 @@ export default function Shell() {
   const [CierreCajaOpen, setCierreCajaOpen] = useState(false);
   const [CustomerModalOpen, setCustomerModalOpen] = useState(false);
   const [RegistrarProductoOpen, setRegistrarProductoOpen] = useState(false);
+  const [VerLeadsOpen, setVerLeadsOpen] = useState(false);
+
 
 
   return (
@@ -59,6 +62,8 @@ export default function Shell() {
               <DashboardView />
             ) :  vista === "inventario" ? (
               <InventarioView />
+            ) : vista === "leads" ? (
+              <LeadsBoardView />
             ) : null}
           </div>
 
@@ -99,6 +104,7 @@ export default function Shell() {
           <CierreCajaModal open={CierreCajaOpen} onClose= {() => setCierreCajaOpen(false)} />
             <ClienteModal open={CustomerModalOpen} onClose= {() => setCustomerModalOpen(false)} />
             <RegistrarProductoModal open={RegistrarProductoOpen} onClose={() => setRegistrarProductoOpen(false)} />
+            <LeadsBoardView />
 
           {/* Drawer inferior para historial */}
           <BottomHistoryDrawer

@@ -1,6 +1,6 @@
 // src/actions/registry.ts
 import type { ActionRegistry, ActionHandler } from "./types";
-import { registrarVenta, registrarCliente, registrarCierreCaja, crearSugerencia, getDrafts, saveDraft, deleteDraft, fetchConsignas, fetchConsignaDetalle, addPagoConsigna, getTopProductosMes, fetchVentaCompleta, registrarDevolucion, modificarVenta, registrarClick, getCierreCaja, registrarAperturaCaja, getAperturaCaja, type AperturaCaja, updateDraftStatus, registrarPedidoML, getPedidosML, updatePedidoMLItems, fetchVentasDiarias, fetchVentasPorHora, fetchProductosPorMes, fetchPagosDiarios, fetchClicksDiarios } from "../api";
+import { registrarVenta, registrarCliente, registrarCierreCaja, fetchLeadsBoard, moveLead,  crearSugerencia, getDrafts, saveDraft, deleteDraft, fetchConsignas, fetchConsignaDetalle, addPagoConsigna, getTopProductosMes, fetchVentaCompleta, registrarDevolucion, modificarVenta, registrarClick, getCierreCaja, registrarAperturaCaja, getAperturaCaja, type AperturaCaja, updateDraftStatus, registrarPedidoML, getPedidosML, updatePedidoMLItems, fetchVentasDiarias, fetchVentasPorHora, fetchProductosPorMes, fetchPagosDiarios, fetchClicksDiarios } from "../api";
 
 const saveSale: ActionHandler<"saveSale"> = async (args) => {
   const id = await registrarVenta(args);
@@ -292,6 +292,18 @@ const getClicksDiariosAction: ActionHandler<"getClicksDiarios"> = async () => {
   }
 };
 
+//acciones de board pipeline de trello
+const getLeadsBoardAction: ActionHandler<"getLeadsBoard"> = async () => {
+  const board = await fetchLeadsBoard();
+  if (!board) return { ok: false };
+  return { ok: true, board };
+};
+
+const moveLeadAction: ActionHandler<"moveLead"> = async ({ id, estado }) => {
+  const ok = await moveLead(id, estado);
+  if (!ok) return { ok: false, error: "No se pudo mover lead" };
+  return { ok: true };
+};
 
 
 
@@ -325,4 +337,6 @@ export const ACTIONS: ActionRegistry = {
   getProductosPorMes: getProductosPorMesAction,
   getPagosDiarios: getPagosDiariosAction,
   getClicksDiarios: getClicksDiariosAction,
+  getLeadsBoard: getLeadsBoardAction,
+  moveLead: moveLeadAction,
 };

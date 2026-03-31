@@ -827,3 +827,50 @@ export async function fetchVentasCompletas() {
   }
   return data ?? [];
 }
+
+
+export async function fetchLeadsBoard() {
+  const { data, error } = await supabase
+    .from("clientes")
+    .select(`
+      id,
+      nombre,
+      apellido,
+      telefono,
+      estado_lead,
+      prioridad,
+      ultimo_contacto
+    `);
+
+  if (error) {
+    console.error("❌ Error cargando leads:", error.message);
+    return null;
+  }
+
+  const board: Record<string, any[]> = {};
+
+  data.forEach((c) => {
+    const estado = c.estado_lead || "nuevo";
+    if (!board[estado]) board[estado] = [];
+    board[estado].push(c);
+  });
+
+  return board;
+}
+
+export async function moveLead(id: number, estado: string) {
+  const { error } = await supabase
+    .from("clientes")
+    .update({
+      estado_lead: estado,
+      ultimo_contacto: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("❌ Error moviendo lead:", error.message);
+    return false;
+  }
+
+  return true;
+}
