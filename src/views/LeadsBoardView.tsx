@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
-import { DndContext, closestCorners } from "@dnd-kit/core";
+import {
+  DndContext,
+  closestCorners,
+  DragOverlay,
+} from "@dnd-kit/core";
 import { performAction } from "../actions/performAction";
 import { RefreshCw } from "lucide-react";
 import { Column } from "../components/ui/ColumnLeads";
+import { Card } from "../components/ui/CardLeads";
 
 const estados = [
   "nuevo",
@@ -13,11 +18,10 @@ const estados = [
   "perdido",
 ];
 
-
-
 export default function LeadsBoardView() {
   const [board, setBoard] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(false);
+  const [activeLead, setActiveLead] = useState<any | null>(null);
 
   const loadBoard = async () => {
     setLoading(true);
@@ -30,8 +34,25 @@ export default function LeadsBoardView() {
     loadBoard();
   }, []);
 
+  // 🔥 CAPTURAR LEAD
+  const handleDragStart = (event: any) => {
+    const id = Number(event.active.id);
+
+    for (const estado of estados) {
+      const found = board[estado]?.find((l) => l.id === id);
+      if (found) {
+        setActiveLead(found);
+        break;
+      }
+    }
+  };
+
+  // 🔥 SOLTAR
   const handleDragEnd = async (event: any) => {
     const { active, over } = event;
+
+    setActiveLead(null);
+
     if (!over) return;
 
     const leadId = Number(active.id);
@@ -59,16 +80,28 @@ export default function LeadsBoardView() {
         </button>
       </div>
 
-      {/* BOARD */}
       {loading ? (
         <div className="text-center py-10">⏳ Cargando...</div>
       ) : (
-        <DndContext collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+        <DndContext
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
           <div className="flex gap-4 overflow-x-auto pb-4">
             {estados.map((estado) => (
-              <Column key={estado} id={estado} leads={board[estado] || []} />
+              <Column
+                key={estado}
+                id={estado}
+                leads={board[estado] || []}
+              />
             ))}
           </div>
+
+          {/* 🔥 ESTO ES LO QUE TE FALTABA */}
+          <DragOverlay style={{ zIndex: 9999 }}>
+            {activeLead ? <Card lead={activeLead} isOverlay /> : null}
+          </DragOverlay>
         </DndContext>
       )}
     </div>
