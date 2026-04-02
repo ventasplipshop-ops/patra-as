@@ -712,6 +712,16 @@ const handlePreventa = async () => {
           >
             🔻 -50% Todo
           </button>
+
+          <div style={{
+            background: "#f5e6c8",
+            padding: "10px",
+            textAlign: "center",
+            fontWeight: "bold"
+          }}>
+            ✝️ Semana Santa activa 🙌  
+            Aprovechá para reponer stock y no quedarte corto en ventas.
+          </div>
           {/* Modal de presupuestos */}
           <PresupuestosModal
             open={openPresupuestos}
