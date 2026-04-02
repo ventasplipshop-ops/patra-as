@@ -720,7 +720,7 @@ const handlePreventa = async () => {
             fontWeight: "bold"
           }}>
             ✝️ Semana Santa activa 🙌  
-            Aprovechá para reponer stock y no quedarte corto en ventas.
+            Aprovechá para reponer stock. Esto es un Recordatorio para Aguila Calva y Panda 😘
           </div>
           {/* Modal de presupuestos */}
           <PresupuestosModal
