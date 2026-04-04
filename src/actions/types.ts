@@ -339,6 +339,16 @@ getVentasDiarias: {
       | (ActionBaseResult & { ok: false; error: string });
   };
 
+  applyPriceChange: {
+    args: {
+      productIds: string[];
+      porcentaje: number;
+      multiplo?: number;
+      mode: "increase" | "revert";
+    };
+    result: ActionBaseResult & { ok: boolean };
+  };
+
 }
 
 

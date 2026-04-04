@@ -1,6 +1,6 @@
 // src/actions/registry.ts
 import type { ActionRegistry, ActionHandler } from "./types";
-import { registrarVenta, registrarCliente, registrarCierreCaja, fetchLeadsBoard, moveLead,  crearSugerencia, getDrafts, saveDraft, deleteDraft, fetchConsignas, fetchConsignaDetalle, addPagoConsigna, getTopProductosMes, fetchVentaCompleta, registrarDevolucion, modificarVenta, registrarClick, getCierreCaja, registrarAperturaCaja, getAperturaCaja, type AperturaCaja, updateDraftStatus, registrarPedidoML, getPedidosML, updatePedidoMLItems, fetchVentasDiarias, fetchVentasPorHora, fetchProductosPorMes, fetchPagosDiarios, fetchClicksDiarios } from "../api";
+import { registrarVenta, aplicarAumentoPrecios, revertirPrecios, registrarCliente, registrarCierreCaja, fetchLeadsBoard, moveLead,  crearSugerencia, getDrafts, saveDraft, deleteDraft, fetchConsignas, fetchConsignaDetalle, addPagoConsigna, getTopProductosMes, fetchVentaCompleta, registrarDevolucion, modificarVenta, registrarClick, getCierreCaja, registrarAperturaCaja, getAperturaCaja, type AperturaCaja, updateDraftStatus, registrarPedidoML, getPedidosML, updatePedidoMLItems, fetchVentasDiarias, fetchVentasPorHora, fetchProductosPorMes, fetchPagosDiarios, fetchClicksDiarios } from "../api";
 
 const saveSale: ActionHandler<"saveSale"> = async (args) => {
   const id = await registrarVenta(args);
@@ -305,6 +305,31 @@ const moveLeadAction: ActionHandler<"moveLead"> = async ({ id, estado }) => {
   return { ok: true };
 };
 
+const applyPriceChange: ActionHandler<"applyPriceChange"> = async ({
+  productIds,
+  porcentaje,
+  multiplo = 100,
+  mode,
+}) => {
+  try {
+    const ok =
+      mode === "increase"
+        ? await aplicarAumentoPrecios(productIds, porcentaje, multiplo)
+        : await revertirPrecios(productIds, porcentaje, multiplo);
+
+    if (!ok) {
+      return { ok: false, error: "No se pudo aplicar cambio de precios" };
+    }
+
+    return { ok: true };
+  } catch (err: any) {
+    return {
+      ok: false,
+      error: err.message ?? "Error inesperado aplicando precios",
+    };
+  }
+};
+
 
 
 
@@ -339,4 +364,5 @@ export const ACTIONS: ActionRegistry = {
   getClicksDiarios: getClicksDiariosAction,
   getLeadsBoard: getLeadsBoardAction,
   moveLead: moveLeadAction,
+  applyPriceChange,
 };

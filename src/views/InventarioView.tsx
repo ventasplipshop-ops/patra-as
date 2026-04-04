@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { RefreshCw, Search, Edit3, Check, X } from "lucide-react";
 import Button from "../components/ui/Button";
+import PriceChangeModal from "../components/PriceChangeModal";
+import { performAction } from "../actions/performAction";
 
 interface InventarioItem {
   id: number;
@@ -31,8 +33,9 @@ export default function InventarioView() {
   const [nuevoNombre, setNuevoNombre] = useState<string>("");
   const [nuevoStock, setNuevoStock] = useState<number>(0);
   const [nuevoPrecio, setNuevoPrecio] = useState<number>(0);
-  const [filtroStock, setFiltroStock] = useState<NivelStock | null>(null)
-  const [selectedItems, setSelectedItems] = useState<InventarioItem[]>([])
+  const [filtroStock, setFiltroStock] = useState<NivelStock | null>(null);
+  const [selectedItems, setSelectedItems] = useState<InventarioItem[]>([]);
+  const [showPriceModal, setShowPriceModal] = useState(false);
 
 
   function toggleSeleccion(item: InventarioItem) {
@@ -173,6 +176,30 @@ const itemsFiltrados = items.filter((i) => {
     document.body.removeChild(link)
   }
 
+  async function handlePriceChange(
+  porcentaje: number,
+  modo: "increase" | "revert"
+) {
+  const ids = selectedItems.map(i => String(i.id));
+
+  const res = await performAction("applyPriceChange", {
+    productIds: ids,
+    porcentaje,
+    multiplo: 100,
+    mode: modo,
+  });
+
+  if (!res.ok) {
+    alert("❌ Error aplicando cambio");
+    return;
+  }
+
+  alert("✅ Precios actualizados");
+  setShowPriceModal(false);
+  setSelectedItems([]);
+  fetchInventario();
+}
+
   // =============================
   // 🧱 UI
   // =============================
@@ -228,6 +255,13 @@ const itemsFiltrados = items.filter((i) => {
             }}
           >
             👐 Descargar seleccionados ({selectedItems.length})
+          </Button>
+          <Button
+            type="button"
+            disabled={selectedItems.length === 0}
+            onClick={() => setShowPriceModal(true)}
+          >
+            💰 Cambiar precios ({selectedItems.length})
           </Button>
           <Button
             type="button"
@@ -382,6 +416,17 @@ const itemsFiltrados = items.filter((i) => {
           </tbody>
         </table>
       </div>
+      <PriceChangeModal
+        open={showPriceModal}
+        onClose={() => setShowPriceModal(false)}
+        onConfirm={handlePriceChange}
+        selectedCount={selectedItems.length}
+        items={selectedItems.map(i => ({
+          id: i.id,
+          nombre: i.nombre,
+          precio: Number(i.precio),
+        }))}
+      />
     </div>
   );
 }

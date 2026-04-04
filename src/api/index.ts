@@ -874,3 +874,44 @@ export async function moveLead(id: number, estado: string) {
 
   return true;
 }
+
+
+//aumentar disminuir precios 
+
+export async function aplicarAumentoPrecios(
+  productIds: string[], // uuid[]
+  porcentaje: number,
+  multiplo: number = 100
+) {
+  const { error } = await supabase.rpc("aplicar_aumento_precios", {
+    p_product_ids: productIds,
+    p_porcentaje: porcentaje,
+    p_multiplo: multiplo,
+  });
+
+  if (error) {
+    console.error("❌ Error aplicando aumento:", error.message);
+    return false;
+  }
+
+  return true;
+}
+
+export async function revertirPrecios(
+  productIds: string[],
+  porcentaje: number,
+  multiplo: number = 100
+) {
+  const { error } = await supabase.rpc("revertir_precios", {
+    p_product_ids: productIds,
+    p_porcentaje: porcentaje,
+    p_multiplo: multiplo,
+  });
+
+  if (error) {
+    console.error("❌ Error revirtiendo precios:", error.message);
+    return false;
+  }
+
+  return true;
+}
