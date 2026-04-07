@@ -80,6 +80,7 @@ export default function CajaView({
   const [aperturaModalOpen, setAperturaModalOpen] = useState(false);
 
   const [estadoDraft, setEstadoDraft] = useState<"Borrador" | "Pendiente en deposito" | "Presupuesto" | "Preventa">("Pendiente en deposito");
+  const [porcentaje, setPorcentaje] = useState(0);
 
   const aplicarDescuentoGeneral = (porcentaje: number) => {
     let totalDescuento = 0;
@@ -693,6 +694,7 @@ const handlePreventa = async () => {
             />
             
           </div> */}
+          <div className="flex flex-wrap gap-2 mb-3">
           <button
             onClick={() => aplicarDescuentoGeneral(0.15)}
             className="px-1 py-1 rounded-lg border text-xs bg-red-600 text-white"
@@ -713,6 +715,34 @@ const handlePreventa = async () => {
             🔻 -50% Todo
           </button>
 
+          {/* INPUT */}
+          <div className="flex items-center px-1 py-1 border rounded-lg overflow-hidden">
+            <input
+              type="number"
+              value={porcentaje}
+              onChange={(e) => {
+                let val = Number(e.target.value);
+
+                if (val < 0) val = 0;
+                if (val > 100) val = 100;
+
+                setPorcentaje(val);
+              }}
+              className="w-16 px-2 py-1 text-sm outline-none"
+            />
+            <span className="px-2 text-sm bg-gray-100">%</span>
+          </div>
+
+          {/* BOTÓN */}
+          <button
+            onClick={() => aplicarDescuentoGeneral(porcentaje / 100)}
+            className="px-2 py-1 rounded-lg border text-xs bg-red-600 text-white hover:bg-red-700"
+          >
+            🔻 
+          </button>
+
+          </div>
+
           <div style={{
             background: "#f5e6c8",
             padding: "10px",
@@ -720,7 +750,7 @@ const handlePreventa = async () => {
             fontWeight: "bold"
           }}>
             ✝️ Semana Santa activa 🙌  
-            Aprovechá para reponer stock. Esto es un Recordatorio para Aguila Calva y Panda 😘
+            Ya puedes bajar todo el % que quieras😘
           </div>
           {/* Modal de presupuestos */}
           <PresupuestosModal
