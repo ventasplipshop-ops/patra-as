@@ -831,7 +831,7 @@ export async function fetchVentasCompletas() {
 
 export async function fetchLeadsBoard() {
   const { data, error } = await supabase
-    .from("clientes")
+    .from("clientes_outbox")
     .select(`
       id,
       nombre,
@@ -860,7 +860,7 @@ export async function fetchLeadsBoard() {
 
 export async function moveLead(id: number, estado: string) {
   const { error } = await supabase
-    .from("clientes")
+    .from("clientes_outbox")
     .update({
       estado_lead: estado,
       ultimo_contacto: new Date().toISOString(),
