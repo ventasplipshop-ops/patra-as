@@ -72,13 +72,37 @@ useEffect(() => {
 
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
+    
+    
+    // 🔥 LOGIN AUTOMÁTICO A TU API
+    const apiRes = await fetch("https://edwin.edabso.com/api/auth/login-universal", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        email: "Anillados2@plipshop.com",
+        password: "42214547",
+        company_slug: "Anillados2"
+      })
+    });
 
+    const apiData = await apiRes.json();
+
+    if (!apiData.token) {
+      return { error: new Error("Login API falló") };
+    }
+
+    localStorage.setItem("api_token", apiData.token);
+    
     return { error: null };
   };
+
 
   const signOut = () => {
     setUser(null);
     localStorage.removeItem('user');
+    localStorage.removeItem("api_token");
   };
 
   return (

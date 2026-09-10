@@ -25,6 +25,7 @@ import { delay } from "framer-motion";
 import ImprimirEtiqueta from "../components/print/ImprimirEtiqueta";
 import { supabase } from "../lib/supabase";
 import Button from "../components/ui/Button";
+import CreateOrderButton from "../botonfantasma";
 
 
 export default function CajaView({
@@ -490,6 +491,8 @@ const handlePreventa = async () => {
         >
           😇Anotar 😣Anotaciones 😂 Anotadas
         </Button>
+        
+        <CreateOrderButton />
 
         <ImprimirPresupuesto
         ref={imprimirRef} // 👈 aquí conectamos el ref

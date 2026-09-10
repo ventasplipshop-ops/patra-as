@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#17181b">
+  <meta name="description" content="Prepara fotografías y fotos 4×4 para impresión mediante procesamiento exclusivamente local.">
+  <title>PLIP FotoLab</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand"><div class="brand-mark">P</div><div><strong>PLIP FotoLab</strong><span>Preparación privada para impresión</span></div></div>
+      <div class="privacy"><span class="privacy-dot"></span><span aria-hidden="true">🔒</span> Procesamiento local</div>
+    </header>
+
+    <nav class="mode-tabs" aria-label="Modos de FotoLab" role="tablist">
+      <button type="button" data-mode-tab="general" role="tab" class="selected" aria-selected="true"><span class="tab-number">01</span><span><b>Editor general</b><small>Edición, producción y pedido ZIP</small></span></button>
+      <button type="button" data-mode-tab="four" role="tab" aria-selected="false"><span class="tab-number">02</span><span><b>Foto 4×4</b><small>Encuadre, copias y PDF A4</small></span></button>
+    </nav>
+
+    <section data-mode-panel="general" class="mode-panel">
+      <section class="intro">
+        <div><p class="eyebrow">EDITOR DE IMPRESIÓN</p><h1>Un editor. Todo el pedido.</h1><p>Carga una o varias fotografías, edita cada encuadre y genera el pedido organizado para laboratorio sin subir ningún archivo.</p></div>
+        <div class="stepper" aria-label="Flujo general"><span class="active"><b>1</b> Fotos</span><i></i><span><b>2</b> Ajuste</span><i></i><span><b>3</b> Pedido</span></div>
+      </section>
+
+      <section id="general-library" class="panel general-library-panel" aria-label="Biblioteca de fotografías">
+        <div class="panel-head general-library-head"><div><span>Fotografías del pedido</span><small>Biblioteca visual · arrastra, selecciona y edita</small></div><b id="general-total">0 fotos</b></div>
+        <div id="general-dropzone" class="order-dropzone">
+          <input id="general-file" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+          <div><strong id="general-file-action">Seleccionar una o varias fotografías</strong><small id="general-file-detail">JPG, PNG o WebP · máx. 45 MB por archivo</small></div>
+          <button id="general-add-files" type="button">＋ AGREGAR FOTOS</button>
+        </div>
+        <div id="general-load-status" class="library-load-status" role="status" aria-live="polite" hidden><div><b id="general-load-text">Preparando miniaturas…</b><span id="general-load-count">0/0</span></div><i><b id="general-load-bar"></b></i></div>
+        <div class="order-selection-bar"><b id="general-selected-count">0 seleccionadas de 0</b><span>Clic: editar · Ctrl/Cmd: alternar · Shift: rango · casilla: selección directa</span><button id="general-select-all" type="button" disabled>Seleccionar todas</button><button id="general-clear-selection" type="button" disabled>Deseleccionar</button></div>
+        <div class="general-grid-wrap"><button id="general-empty-grid" class="order-empty" type="button"><span>＋</span><strong>Arrastra aquí tus fotografías</strong><small>o haz clic para elegir una foto o un lote completo</small></button><div id="general-grid" class="order-grid" role="listbox" aria-label="Fotografías del pedido" aria-multiselectable="true" hidden></div></div>
+        <div id="general-drop-overlay" class="library-drop-overlay" aria-hidden="true" hidden><span>↓</span><strong>Suelta aquí tus fotografías</strong><small>JPG, JPEG, PNG o WebP</small></div>
+        <p id="general-library-notice" class="order-notice">Las fotografías permanecen en este dispositivo.</p>
+      </section>
+
+      <section class="workspace general-workspace">
+        <aside class="panel settings-panel">
+          <div class="panel-head"><span>Configuración activa</span><button id="general-reset" class="text-button" type="button" disabled>↻ Restablecer</button></div>
+          <div class="field-group">
+            <label for="general-preset">1. Tamaño de impresión</label>
+            <div class="select-wrap"><select id="general-preset"><option value="10x15">10 × 15 cm · Foto clásica</option><option value="10.2x15.2" selected>10,2 × 15,2 cm · Laboratorio</option><option value="13x18">13 × 18 cm · Retrato</option><option value="15x20">15 × 20 cm · Ampliación</option><option value="20x25">20,3 × 25,2 cm · Portarretrato</option><option value="40x50">40 × 50 cm · Gran formato</option><option value="a4">A4 · 21 × 29,7 cm</option><option value="custom">Medida personalizada</option></select></div>
+            <div class="measure-row"><div><span>Ancho (cm)</span><input id="general-width-cm" type="number" min="1" max="100" step="0.1" value="10.2"></div><button id="general-swap" class="icon-button" type="button" title="Cambiar orientación">⇄</button><div><span>Alto (cm)</span><input id="general-height-cm" type="number" min="1" max="100" step="0.1" value="15.2"></div></div>
+          </div>
+          <div class="field-group"><label>2. Resolución</label><div class="dpi-options"><button type="button" data-general-dpi="200" class="selected">200<small>DPI</small></button><button type="button" data-general-dpi="250">250<small>DPI</small></button><button type="button" data-general-dpi="300">300<small>DPI</small></button></div><div class="output-size"><span>Archivo final</span><strong id="general-pixel-output">803 × 1.197 px</strong></div></div>
+          <div class="field-group order-fields production-fields">
+            <label for="general-product">3. Producto</label><div class="select-wrap"><select id="general-product"><option value="foto">Foto</option><option value="foam">Foam</option><option value="bastidor">Bastidor</option></select></div>
+            <label for="general-finish">4. Acabado</label><div class="select-wrap"><select id="general-finish"><option value="mate">Mate</option><option value="brillo">Brillo</option></select></div>
+            <label for="general-copies">5. Copias</label><input id="general-copies" type="number" min="1" max="99" step="1" value="1">
+            <button id="general-apply-selection" class="action-button primary" type="button" disabled>APLICAR A LA SELECCIÓN</button>
+            <small>Aplica tamaño, DPI, producto, acabado y copias sin modificar los encuadres.</small>
+          </div>
+        </aside>
+
+        <section class="panel preview-panel">
+          <div class="panel-head"><span id="general-active-name">Vista previa</span><small>Arrastra la foto con mouse o dedo</small></div>
+          <div class="stage"><div id="general-frame" class="canvas-frame" style="aspect-ratio:10.2/15.2"><canvas id="general-canvas" aria-label="Vista previa de la fotografía activa"></canvas><button id="general-empty" class="empty-state" type="button"><span>↑</span><strong>Carga una fotografía</strong><small>para editar su encuadre</small></button><span class="crop-corner top-left"></span><span class="crop-corner top-right"></span><span class="crop-corner bottom-left"></span><span class="crop-corner bottom-right"></span></div></div>
+          <div class="editing-tools"><button id="general-rotate" type="button" disabled>↻ Girar</button><button id="general-flip" type="button" disabled>↔ Voltear</button><div class="zoom-control"><span>−</span><input id="general-zoom" aria-label="Zoom" type="range" min="1" max="4" step="0.01" value="1" disabled><span>+</span><b id="general-zoom-label">100%</b></div></div>
+          <div class="precision-controls"><div class="range-row"><label for="general-pan-x">Posición horizontal</label><input id="general-pan-x" type="range" min="-100" max="100" step="1" value="0" disabled><b id="general-pan-x-label">0%</b></div><div class="range-row"><label for="general-pan-y">Posición vertical</label><input id="general-pan-y" type="range" min="-100" max="100" step="1" value="0" disabled><b id="general-pan-y-label">0%</b></div></div>
+        </section>
+
+        <aside class="panel export-panel">
+          <div class="panel-head"><span>Resultado</span></div><div class="result-card"><span class="result-kicker">FOTOGRAFÍA ACTIVA</span><strong id="general-result-size">10,2 × 15,2 cm</strong><p id="general-result-pixels">803 × 1.197 píxeles a 200 DPI</p></div><div id="general-quality-card" class="quality-card neutral"><span class="quality-signal"></span><div><strong id="general-quality-label">Sin foto</strong><small id="general-quality-detail">—</small></div></div>
+          <div class="field-group compact"><label>Formato individual</label><div class="format-options"><button id="general-format-jpg" type="button" class="selected"><b>JPG</b><small>Ideal para laboratorio</small></button><button id="general-format-png" type="button"><b>PNG</b><small>Sin pérdida</small></button></div></div>
+          <div id="general-jpg-quality-group" class="field-group compact quality-slider"><div class="label-row"><label for="general-jpg-quality">Calidad JPG</label><b id="general-jpg-quality-label">94%</b></div><input id="general-jpg-quality" type="range" min="0.75" max="1" step="0.01" value="0.94"></div>
+          <button id="general-download" class="download-button" type="button">↑ Cargar una fotografía</button><p id="general-notice" class="notice">Carga una foto para comenzar</p>
+          <div class="order-inline-summary"><div class="panel-head"><span>Pedido ZIP</span><small id="general-order-status">0 fotos</small></div><div id="general-order-summary" class="order-summary"></div><div id="general-order-warnings" class="order-warnings"></div><div id="general-order-progress" class="task-progress order-progress" hidden><div><span id="general-order-progress-text">Preparando fotografías…</span><span>local</span></div><i><b id="general-order-progress-bar"></b></i></div><button id="general-generate-order" class="download-button order-generate" type="button" disabled>↓ GENERAR PEDIDO ZIP</button></div>
+          <div class="private-note"><span>🔒</span><p><strong>Procesamiento privado</strong><span>La fotografía nunca sale de este dispositivo.</span></p></div>
+        </aside>
+      </section>
+    </section>
+
+    <section data-mode-panel="four" class="mode-panel" hidden>
+      <section class="intro four-intro">
+        <div><p class="eyebrow">FOTO 4×4</p><h1>Encuadra y genera copias exactas.</h1><p>La fotografía se utiliza tal como fue cargada. Ajusta el encuadre y descarga un PDF A4 con cada copia a 40 × 40 mm.</p></div>
+        <div class="flow-line" aria-label="Flujo Foto 4×4"><span>Cargar</span><i>→</i><span>Encuadrar</span><i>→</i><span>Copias</span><i>→</i><span>PDF</span></div>
+      </section>
+
+      <section class="workspace four-workspace">
+        <aside class="panel four-prepare-panel">
+          <div class="panel-head"><span>1 · Cargar fotografía</span><small>Local</small></div>
+          <div class="field-group">
+            <label>Fotografía</label>
+            <button id="four-dropzone" class="dropzone" type="button"><input id="four-file" type="file" accept="image/jpeg,image/png,image/webp" hidden><span class="drop-icon">↑</span><span><strong id="four-file-action">Cargar retrato</strong><small id="four-file-detail">JPG, PNG o WebP</small></span></button>
+          </div>
+          <div class="direct-photo-note"><b>Fotografía original</b><span>El archivo se encuadra tal como fue cargado y permanece en este dispositivo.</span></div>
+        </aside>
+
+        <section class="panel four-editor-panel">
+          <div class="panel-head"><span>2 · Encuadrar 4×4</span><small>40 × 40 mm exactos</small></div>
+          <div class="four-stage"><div id="four-frame" class="four-frame"><canvas id="four-canvas" aria-label="Encuadre de foto 4 por 4"></canvas><button id="four-empty" class="empty-state" type="button"><span>↑</span><strong>Carga un retrato</strong><small>para preparar la foto 4×4</small></button><div class="face-guides" aria-hidden="true"><i class="head-guide"></i><i class="eye-guide"></i><i class="shoulder-guide"></i></div><span class="size-badge">4 cm</span></div></div>
+          <div class="four-controls"><div class="range-row"><label for="four-pan-x">Posición horizontal</label><input id="four-pan-x" type="range" min="-100" max="100" step="1" value="0" disabled><b id="four-pan-x-label">0%</b></div><div class="range-row"><label for="four-pan-y">Posición vertical</label><input id="four-pan-y" type="range" min="-100" max="100" step="1" value="0" disabled><b id="four-pan-y-label">0%</b></div><div class="range-row"><label for="four-zoom">Zoom</label><input id="four-zoom" type="range" min="1" max="4" step="0.01" value="1" disabled><b id="four-zoom-label">100%</b></div><div class="range-row"><label for="four-rotation">Rotación</label><input id="four-rotation" type="range" min="-15" max="15" step="1" value="0" disabled><b id="four-rotation-label">0°</b></div><button id="four-reset-transform" class="text-button reset-four" type="button" disabled>↻ Restablecer encuadre</button></div>
+          <p id="four-notice" class="four-notice">Carga una foto. Todo el proceso ocurre dentro del navegador.</p>
+        </section>
+
+        <aside class="panel sheet-panel">
+          <div class="panel-head"><span>3 · Copias y PDF</span><small id="sheet-pages">1 hoja A4</small></div>
+          <div class="field-group"><div class="label-row"><label>Cantidad de copias</label><b id="sheet-count">4 copias</b></div><div class="copy-options"><button type="button" data-copies="2">2</button><button type="button" data-copies="4" class="selected">4</button><button type="button" data-copies="6">6</button><button type="button" data-copies="8">8</button><button type="button" data-copies="10">10</button><button type="button" data-copies="12">12</button></div><label class="custom-copy-label" for="custom-copies">Personalizada <input id="custom-copies" type="number" min="1" max="99" step="1" value="4"></label><label class="check-row"><input id="cut-marks" type="checkbox" checked><span>Agregar marcas de corte</span></label></div>
+          <div class="sheet-preview-wrap"><div class="sheet-preview-head"><span>Previsualización A4</span><b>210 × 297 mm</b></div><canvas id="sheet-preview" aria-label="Previsualización de hoja A4"></canvas><small>Las guías de encuadre no se imprimen. Imprime al 100 % o “tamaño real”.</small></div>
+          <button id="generate-pdf" class="download-button pdf-button" type="button" disabled>↓ GENERAR PDF</button><div class="physical-note"><b>Medida física garantizada</b><span>Cada imagen se dibuja en el PDF a 40 × 40 mm usando puntos PDF, no píxeles CSS.</span></div>
+        </aside>
+      </section>
+    </section>
+
+    <footer><span>PLIP FotoLab</span><p>Medidas exactas · Procesamiento local · Sin almacenar fotografías</p></footer>
+  </main>
+
+  <script src="./assets/vendor/pdf-lib/pdf-lib.min.js"></script>
+  <script src="./modules/core/state.js"></script>
+  <script src="./modules/core/canvas.js"></script>
+  <script src="./modules/core/dpi.js"></script>
+  <script src="./modules/core/transform.js"></script>
+  <script src="./modules/orders/catalog.js"></script>
+  <script src="./modules/orders/order-state.js"></script>
+  <script src="./modules/orders/naming.js"></script>
+  <script src="./modules/orders/validation.js"></script>
+  <script src="./modules/orders/zip-writer.js"></script>
+  <script src="./modules/orders/order-processing.js"></script>
+  <script src="./modules/editor/general-editor.js"></script>
+  <script src="./modules/fourbyfour/layout.js"></script>
+  <script src="./modules/fourbyfour/pdf-generator.js"></script>
+  <script src="./modules/fourbyfour/fourbyfour-editor.js"></script>
+  <script src="./modules/ui/app-controller.js"></script>
+</body>
+</html>

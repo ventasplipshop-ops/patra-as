@@ -28,10 +28,15 @@ const herramientas = {
     leads: [
     { label: "Ver tablero", icon: <Upload size={16} /> },
     { label: "Actualizar leads", icon: <Upload size={16} /> }
-  ]
+  ],
+  orders: [
+
+  ],
+  fotolab: [],
+  folletos: []
 } as const;
 
-export default function RightToolsDrawer({ open, vista, onClose, onToolSelect, }: { open: boolean; vista: "caja" | "deposito" | "dashboard" | "inventario" | "leads"; onClose: () => void;  onToolSelect?: (label: string) => void; }) {
+export default function RightToolsDrawer({ open, vista, onClose, onToolSelect, }: { open: boolean; vista: "caja" | "deposito" | "dashboard" | "inventario" | "leads" | "orders" | "fotolab" | "folletos"; onClose: () => void;  onToolSelect?: (label: string) => void; }) {
   const items = herramientas[vista];
 
   return (

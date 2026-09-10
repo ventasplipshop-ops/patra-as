@@ -17,9 +17,12 @@ import DashboardView from "../views/DashboardView";
 import InventarioView from "../views/InventarioView";
 import RegistrarProductoModal from "../components/RegistrarProductoModal";
 import LeadsBoardView from "../views/LeadsBoardView";
+import OrdersAdminView from "../views/OrdersAdminView";
+import FotoLabView from "../modules/fotolab/FotoLabView";
+import FolletosView from "../modules/folletos/FolletosView";
 
 
-type Vista = "caja" | "deposito" | "dashboard" | "inventario" | "leads";
+type Vista = "caja" | "deposito" | "dashboard" | "inventario" | "leads" | "orders" | "fotolab" | "folletos";
 
 export default function Shell() {
   const [vista, setVista] = useState<Vista>("caja");
@@ -64,6 +67,12 @@ export default function Shell() {
               <InventarioView />
             ) : vista === "leads" ? (
               <LeadsBoardView />
+            ) : vista === "orders" ? (
+              <OrdersAdminView />
+            ) : vista === "fotolab" ? (
+              <FotoLabView />
+            ) : vista === "folletos" ? (
+              <FolletosView />
             ) : null}
           </div>
 

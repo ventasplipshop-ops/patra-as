@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Boxes, ChevronLeft, ShoppingBag } from "lucide-react";
 
-type Vista = "caja" | "deposito" | "dashboard" | "inventario" | "leads";
+type Vista = "caja" | "deposito" | "dashboard" | "inventario" | "leads" | "orders" | "fotolab" | "folletos";
 
 export default function SidebarOverlay({
   open,
@@ -92,6 +92,23 @@ export default function SidebarOverlay({
                 <Boxes size={18} />
                 <span>Leads</span>
               </button>
+                            <button
+                onClick={() => onSelectVista("orders")}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                  vistaActual === "orders" ? "bg-gray-100 dark:bg-gray-700" : ""
+                }`}
+              >
+                <Boxes size={18} />
+                <span>Ordenes</span>
+              </button>
+            </nav>
+            <nav className="mt-2 space-y-1" aria-label="Herramientas de impresión">
+              {([['fotolab', 'FotoLab'], ['folletos', 'Folletos']] as const).map(([vista, label]) => (
+                <button key={vista} onClick={() => onSelectVista(vista)}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 ${vistaActual === vista ? 'bg-gray-100 dark:bg-gray-700' : ''}`}>
+                  <Boxes size={18} /><span>{label}</span>
+                </button>
+              ))}
             </nav>
           </motion.aside>
         </>
