@@ -41,6 +41,7 @@ export async function createPlipServer({
   storageDir = process.env.TRANSFERENCIAS_DIR || (process.platform === 'win32'
     ? 'C:\\PLIP-Datos\\transferencias' : path.join(homedir(), 'PLIP-Datos', 'transferencias')),
   distDir = path.join(projectRoot, 'dist'),
+  apiOnly = process.env.PLIP_API_ONLY === '1',
   maxFileBytes = Number(process.env.TRANSFERENCIAS_MAX_MB || 5120) * 1024 * 1024,
 } = {}) {
   if (!Number.isSafeInteger(maxFileBytes) || maxFileBytes <= 0) throw new Error('TRANSFERENCIAS_MAX_MB debe ser un número positivo.');
@@ -55,8 +56,8 @@ export async function createPlipServer({
   const temporary = path.join(storage, '.temporales');
   await mkdir(temporary, { recursive: true });
   if ((await lstat(temporary)).isSymbolicLink()) throw new Error('La carpeta temporal no puede ser un enlace.');
-  const dist = await realpath(distDir);
-  await access(path.join(dist, 'index.html'));
+  const dist = apiOnly ? null : await realpath(distDir);
+  if (dist) await access(path.join(dist, 'index.html'));
 
   async function fileInfo(id) {
     if (!uuidPattern.test(id)) throw httpError(404, 'Archivo no encontrado.');
@@ -190,6 +191,7 @@ export async function createPlipServer({
         return;
       }
       if (pathname.startsWith('/api/')) throw httpError(404, 'Endpoint no encontrado.');
+      if (apiOnly) throw httpError(404, 'Endpoint no encontrado.');
       if (!['GET', 'HEAD'].includes(method)) throw httpError(405, 'Método no permitido.');
       let filename = path.resolve(dist, '.' + pathname);
       if (filename !== dist && !inside(dist, filename)) throw httpError(404, 'No encontrado.');
@@ -225,9 +227,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   try {
     const server = await createPlipServer();
     server.on('error', error => { console.error('No se pudo iniciar PLIP:', error.message); process.exitCode = 1; });
-    server.listen(port, '0.0.0.0', () => console.log(`PLIP: http://localhost:${port} — red: http://<IP-del-servidor>:${port}`));
+    server.listen(port, '0.0.0.0', () => console.log(`${process.env.PLIP_API_ONLY === '1' ? 'PLIP Transferencias API' : 'PLIP'}: escuchando en 0.0.0.0:${port}`));
   } catch (error) {
-    console.error('No se pudo iniciar PLIP. Verificá la carpeta de datos y ejecutá npm run build.', error.message);
+    console.error(process.env.PLIP_API_ONLY === '1'
+      ? 'No se pudo iniciar Transferencias. Verificá el montaje y los permisos de la carpeta de datos.'
+      : 'No se pudo iniciar PLIP. Verificá la carpeta de datos y la compilación del frontend.', error.message);
     process.exitCode = 1;
   }
 }

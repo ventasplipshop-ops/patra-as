@@ -8,8 +8,8 @@ import http from 'node:http';
 import { createPlipServer } from './plip-server.mjs';
 
 let directory, storage, dist, server, base;
-async function start() {
-  server = await createPlipServer({ storageDir: storage, distDir: dist, maxFileBytes: 1024 * 1024 });
+async function start(apiOnly = false) {
+  server = await createPlipServer({ storageDir: storage, distDir: apiOnly ? path.join(directory, 'sin-dist') : dist, apiOnly, maxFileBytes: 1024 * 1024 });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   base = `http://127.0.0.1:${server.address().port}`;
 }
@@ -129,4 +129,26 @@ test('los archivos sobreviven al reinicio del servidor', async () => {
   await close(); await start();
   assert.equal((await list()).length, 2);
   assert.deepEqual(Buffer.from(await (await fetch(`${base}/api/transferencias/${first.id}/download`)).arrayBuffer()), photo);
+});
+
+test('modo API sin dist conserva las cinco operaciones y persiste al recrear el proceso', async () => {
+  await close(); await start(true);
+  assert.equal((await fetch(base)).status, 404);
+  assert.equal((await fetch(base + '/login')).status, 404);
+  assert.equal((await fetch(base + '/app.js')).status, 404);
+  assert.equal((await list()).length, 2);
+  const response = await upload('api-video.mp4', video, 'video/mp4');
+  assert.equal(response.status, 201);
+  const item = await response.json();
+  assert.deepEqual(await readFile(path.join(storage, item.id, item.name)), video);
+  await close(); await start(true);
+  assert.ok((await list()).some(file => file.id === item.id));
+  const downloaded = await fetch(`${base}/api/transferencias/${item.id}/download`);
+  assert.equal(downloaded.status, 200);
+  assert.deepEqual(Buffer.from(await downloaded.arrayBuffer()), video);
+  const zip = await fetch(base + '/api/transferencias/download-all');
+  assert.equal(zip.status, 200);
+  assert.equal(Buffer.from(await zip.arrayBuffer()).subarray(0, 2).toString(), 'PK');
+  assert.equal((await fetch(`${base}/api/transferencias/${item.id}`, { method: 'DELETE' })).status, 204);
+  assert.equal((await list()).length, 2);
 });

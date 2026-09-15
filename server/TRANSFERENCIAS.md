@@ -1,5 +1,9 @@
 # PLIP — servidor local y Transferencias
 
+Para el despliegue Docker de producción (nginx en puerto 125 + API interna), seguir
+`deployment/DOCKER.md`. Las instrucciones `npm start` de este documento corresponden
+solo al uso local sin Docker; no son un paso adicional del deploy de producción.
+
 ## Inicio en la computadora que actúa como servidor
 
 Requiere Node.js compatible con el proyecto (probado con Node 22.20.0). Desde la

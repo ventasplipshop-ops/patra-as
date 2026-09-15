@@ -16,7 +16,7 @@ function sizeLabel(bytes: number) {
 }
 async function responseError(response: Response) {
   try { const data = await response.json(); return data.error || 'No se pudo completar la operación.'; }
-  catch { return 'No se pudo conectar con Transferencias. Iniciá PLIP con npm start en el servidor.'; }
+  catch { return 'Transferencias no está disponible. Verificá la conexión y el servicio de archivos del servidor de PLIP.'; }
 }
 
 export default function TransferenciasView() {
@@ -39,7 +39,7 @@ export default function TransferenciasView() {
       const response = await fetch(endpoint, { cache: 'no-store' });
       if (!response.ok) throw new Error(await responseError(response));
       const result: unknown = await response.json();
-      if (!Array.isArray(result)) throw new Error('Transferencias no está disponible. Iniciá PLIP con npm start en el servidor.');
+      if (!Array.isArray(result)) throw new Error('Transferencias no está disponible. Verificá la conexión y el servicio de archivos del servidor de PLIP.');
       if (mounted.current && id === refreshId.current) setFiles(result);
     } catch (cause) {
       if (mounted.current && id === refreshId.current) setError(cause instanceof Error ? cause.message : 'No se pudo obtener el listado.');

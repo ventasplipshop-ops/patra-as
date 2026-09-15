@@ -1,0 +1,39 @@
+# Install at /var/docker/2.0plipshop/docker-compose.yml, beside deploy.sh.
+# All build paths below are relative to that existing deployment directory.
+version: '3.7'
+
+services:
+  frontend:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      target: frontend
+    container_name: pos2-app
+    ports:
+      - "125:80"
+    depends_on:
+      - transferencias
+    restart: unless-stopped
+
+  transferencias:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      target: transferencias
+    environment:
+      PLIP_API_ONLY: "1"
+      PORT: "8080"
+      TRANSFERENCIAS_DIR: /data/transferencias
+      TRANSFERENCIAS_MAX_MB: "5120"
+    user: "1000:1000"
+    volumes:
+      - type: bind
+        source: /var/lib/plip/transferencias
+        target: /data/transferencias
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/transferencias').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
