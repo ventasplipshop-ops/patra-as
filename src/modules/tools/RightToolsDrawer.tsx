@@ -33,10 +33,11 @@ const herramientas = {
 
   ],
   fotolab: [],
-  folletos: []
+  folletos: [],
+  transferencias: []
 } as const;
 
-export default function RightToolsDrawer({ open, vista, onClose, onToolSelect, }: { open: boolean; vista: "caja" | "deposito" | "dashboard" | "inventario" | "leads" | "orders" | "fotolab" | "folletos"; onClose: () => void;  onToolSelect?: (label: string) => void; }) {
+export default function RightToolsDrawer({ open, vista, onClose, onToolSelect, }: { open: boolean; vista: "caja" | "deposito" | "dashboard" | "inventario" | "leads" | "orders" | "fotolab" | "folletos" | "transferencias"; onClose: () => void;  onToolSelect?: (label: string) => void; }) {
   const items = herramientas[vista];
 
   return (

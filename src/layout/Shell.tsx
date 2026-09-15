@@ -20,9 +20,10 @@ import LeadsBoardView from "../views/LeadsBoardView";
 import OrdersAdminView from "../views/OrdersAdminView";
 import FotoLabView from "../modules/fotolab/FotoLabView";
 import FolletosView from "../modules/folletos/FolletosView";
+import TransferenciasView from "../modules/transferencias/TransferenciasView";
 
 
-type Vista = "caja" | "deposito" | "dashboard" | "inventario" | "leads" | "orders" | "fotolab" | "folletos";
+type Vista = "caja" | "deposito" | "dashboard" | "inventario" | "leads" | "orders" | "fotolab" | "folletos" | "transferencias";
 
 export default function Shell() {
   const [vista, setVista] = useState<Vista>("caja");
@@ -73,6 +74,8 @@ export default function Shell() {
               <FotoLabView />
             ) : vista === "folletos" ? (
               <FolletosView />
+            ) : vista === "transferencias" ? (
+              <TransferenciasView />
             ) : null}
           </div>
 

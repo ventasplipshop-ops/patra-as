@@ -53,9 +53,26 @@ try {
   }
   await photo.locator('#general-file').setInputFiles([input, { ...input, name: 'segunda.png' }]);
   await photo.getByRole('button', { name: '↓ Descargar foto preparada', exact: true }).waitFor();
-  // Custom dimensions avoid the documented pre-existing preset/id collision.
-  await photo.locator('#general-preset').selectOption('custom');
+  const beforeBulk = await photo.locator('body').evaluate(() => {
+    const editor = window.FotoLab.generalEditor;
+    return { ids: editor.items.map(item => item.id), activeId: editor.activeId,
+      selectedIds: [...editor.selectedIds], transforms: editor.items.map(item => item.transform) };
+  });
+  await photo.locator('#general-preset').selectOption('13x18');
   await photo.locator('#general-apply-selection').click();
+  const afterBulk = await photo.locator('body').evaluate(() => {
+    const editor = window.FotoLab.generalEditor;
+    return { ids: editor.items.map(item => item.id), activeId: editor.activeId,
+      selectedIds: [...editor.selectedIds], transforms: editor.items.map(item => item.transform),
+      sizes: editor.items.map(item => [item.sizeId, item.widthCm, item.heightCm]),
+      activeImage: Boolean(editor.activeItem()?.image) };
+  });
+  assert.deepEqual(afterBulk.ids, beforeBulk.ids);
+  assert.equal(afterBulk.activeId, beforeBulk.activeId);
+  assert.deepEqual(afterBulk.selectedIds, beforeBulk.selectedIds);
+  assert.deepEqual(afterBulk.transforms, beforeBulk.transforms);
+  assert.deepEqual(afterBulk.sizes, [['13x18', 13, 18], ['13x18', 13, 18]]);
+  assert.equal(afterBulk.activeImage, true);
   await download(photo.locator('#general-download'), Buffer.from([255, 216]));
   await photo.locator('#general-format-png').click();
   await download(photo.locator('#general-download'), Buffer.from([137, 80, 78, 71]));

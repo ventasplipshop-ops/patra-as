@@ -518,7 +518,7 @@
         if (!this.selectedIds.has(item.id)) return item;
         const preset = FotoLab.orderCatalog.getSize(sizeId);
         const dimensions = preset ? FotoLab.orderCatalog.orientedSize(preset, item) : { widthCm: customWidth, heightCm: customHeight };
-        return { ...item, sizeId, ...dimensions, dpi, product, finish, copies, productionAssigned: true, transform: item.transform };
+        return { ...item, sizeId, widthCm: dimensions.widthCm, heightCm: dimensions.heightCm, dpi, product, finish, copies, productionAssigned: true, transform: item.transform };
       });
       this.libraryNotice(`Datos de producción aplicados a ${this.selectedIds.size} fotografía(s). Los encuadres se conservaron.`);
       this.updateAll();
