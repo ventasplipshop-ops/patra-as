@@ -1,5 +1,6 @@
 import html from './web/index.html?raw';
 import css from './web/styles.css?raw';
+import { useTransferenciasPicker } from '../transferencias/useTransferenciasPicker';
 
 // Preserve the original script order and isolate its document/global listeners.
 const scripts = import.meta.glob('./web/**/*.js', {
@@ -14,6 +15,10 @@ const documentSource = html
   });
 
 export default function FotoLabView() {
-  return <iframe title="FotoLab" srcDoc={documentSource}
-    className="w-full h-full border-0" style={{ minHeight: 600 }} />;
+  const { frame, onLoad, picker } = useTransferenciasPicker([
+    { input: '#general-file', after: '#general-add-files', label: 'Desde Transferencias' },
+    { input: '#four-file', after: '#four-dropzone', label: 'Desde Transferencias' },
+  ]);
+  return <><iframe ref={frame} onLoad={onLoad} title="FotoLab" srcDoc={documentSource}
+    className="w-full h-full border-0" style={{ minHeight: 600 }} />{picker}</>;
 }

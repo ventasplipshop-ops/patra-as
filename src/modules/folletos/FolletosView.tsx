@@ -2,6 +2,7 @@ import html from './tool.html?raw';
 import pdfLib from '../fotolab/web/assets/vendor/pdf-lib/pdf-lib.min.js?raw';
 import pdfJs from './vendor/pdf.min.js?raw';
 import workerUrl from './vendor/pdf.worker.min.js?url';
+import { useTransferenciasPicker } from '../transferencias/useTransferenciasPicker';
 
 const inlineScript = (source: string) => `<script>${source.replace(/<\/script/gi, '<\\/script')}</script>`;
 const documentSource = html
@@ -11,6 +12,9 @@ const documentSource = html
 
 // The embedded document keeps the original canvas/PDF workflow and CSS isolated.
 export default function FolletosView() {
-  return <iframe title="Folletos" srcDoc={documentSource}
-    className="w-full h-full border-0" style={{ minHeight: 600 }} />;
+  const { frame, onLoad, picker } = useTransferenciasPicker([
+    { input: '#archivo', after: '#archivo', label: 'Elegir desde Transferencias' },
+  ]);
+  return <><iframe ref={frame} onLoad={onLoad} title="Folletos" srcDoc={documentSource}
+    className="w-full h-full border-0" style={{ minHeight: 600 }} />{picker}</>;
 }
