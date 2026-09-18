@@ -25,7 +25,7 @@ const staticTypes = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascri
   '.ico': 'image/x-icon', '.woff2': 'font/woff2', ...mediaTypes };
 const httpError = (status, message) => Object.assign(new Error(message), { status });
 const inside = (root, target) => target.startsWith(root + path.sep);
-const attachment = name => `attachment; filename="download"; filename*=UTF-8''${encodeURIComponent(name).replace(/['()*]/g, c => '%' + c.charCodeAt(0).toString(16))}`;
+const attachment = (name, disposition = 'attachment') => `${disposition}; filename="download"; filename*=UTF-8''${encodeURIComponent(name).replace(/['()*]/g, c => '%' + c.charCodeAt(0).toString(16))}`;
 
 function json(response, status, value) {
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -174,6 +174,46 @@ export async function createPlipServer({
         for (const file of files) archive.file(file.filename, { name: `${file.id}/${file.name}`, store: true });
         try { await Promise.all([sent, archive.finalize()]); }
         finally { archive.abort(); }
+        return;
+      }
+      const preview = pathname.match(/^\/api\/transferencias\/([^/]+)\/view$/);
+      if (preview && (method === 'GET' || method === 'HEAD')) {
+        const info = await fileInfo(preview[1]);
+        // Only the raster image/video types already admitted for uploads, never HTML/SVG.
+        if (!Object.values(mediaTypes).includes(info.type)) throw httpError(415, 'Este archivo no admite visualización.');
+        const headers = { 'Content-Type': info.type, 'Content-Disposition': attachment(info.name, 'inline'),
+          'Cache-Control': 'no-store', 'Accept-Ranges': 'bytes',
+          'Content-Security-Policy': "default-src 'none'; sandbox" };
+        let start = 0;
+        let end = info.size - 1;
+        let status = 200;
+        // Single-byte ranges allow seeking videos without reading them into memory.
+        if (request.headers.range && method === 'GET') {
+          const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.range);
+          let valid = Boolean(range && (range[1] || range[2]) && info.size > 0);
+          if (valid) {
+            if (!range[1]) {
+              const suffix = Number(range[2]);
+              valid = Number.isSafeInteger(suffix) && suffix > 0;
+              start = Math.max(0, info.size - suffix);
+            } else {
+              start = Number(range[1]);
+              const requestedEnd = range[2] ? Number(range[2]) : end;
+              valid = Number.isSafeInteger(start) && Number.isSafeInteger(requestedEnd);
+              end = Math.min(requestedEnd, end);
+            }
+            valid = valid && start >= 0 && start <= end && start < info.size;
+          }
+          if (!valid) {
+            response.writeHead(416, { ...headers, 'Content-Range': `bytes */${info.size}`, 'Content-Length': 0 });
+            response.end(); return;
+          }
+          status = 206;
+          headers['Content-Range'] = `bytes ${start}-${end}/${info.size}`;
+        }
+        response.writeHead(status, { ...headers, 'Content-Length': info.size ? end - start + 1 : 0 });
+        if (method === 'HEAD' || !info.size) response.end();
+        else await pipeline(createReadStream(info.filename, { start, end }), response);
         return;
       }
       const match = pathname.match(/^\/api\/transferencias\/([^/]+)(\/download)?$/);

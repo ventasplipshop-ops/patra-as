@@ -56,6 +56,7 @@ No colocar manualmente archivos en esta estructura mientras el servicio opera.
 | POST | `/api/transferencias` | Multipart, un archivo en `file`; 201 con id, nombre, tipo, tamaño y fecha. La pantalla envía la selección múltiple en una cola. |
 | GET | `/api/transferencias` | Lista JSON de archivos completos. |
 | GET | `/api/transferencias/:id/download` | Descarga original por streaming. |
+| GET / HEAD | `/api/transferencias/:id/view` | Original inline con MIME, sin copias; rangos de bytes para reproducir y buscar en videos. |
 | GET | `/api/transferencias/download-all` | ZIP64 por streaming, método STORE sin compresión. |
 | DELETE | `/api/transferencias/:id` | Elimina archivo y subcarpeta; 204. |
 
@@ -63,6 +64,19 @@ El ZIP no se guarda en disco. Dentro del ZIP, cada original conserva su nombre
 bajo su UUID para evitar colisiones. Los bytes no se editan, recomprimen ni procesan.
 El listado obtiene nombre, tamaño y fecha del filesystem; no hay base de datos.
 El tipo se deduce de la extensión, sin analizar ni convertir el contenido multimedia.
+
+La columna Vista carga imágenes originales de forma diferida. Al pulsarla abre un
+visor que se cierra con X, Escape o clic fuera. Los videos muestran un indicador
+y se abren con controles de reproducción. La compatibilidad depende del formato
+y códec que admita el navegador; si no puede mostrarlo, se informa y se conserva
+la descarga habitual. No se generan miniaturas ni versiones convertidas en disco.
+HTML y SVG no se admiten para visualización inline.
+
+El nombre mostrado es exactamente el recibido del selector (`File.name`), que
+también se envía explícitamente en la subida. El UUID identifica la carpeta, no
+sustituye el nombre. Si el dispositivo entrega un archivo cuyo nombre ya es un
+UUID, ese es el nombre original recibido: no hay metadatos guardados que permitan
+recuperar un nombre anterior. No se renombran archivos existentes.
 
 Admite JPG/JPEG, PNG, WebP, GIF, BMP, TIFF, HEIC/HEIF, AVIF y videos MP4, MOV, M4V,
 AVI, MKV, WebM, MPG/MPEG, 3GP, MTS/M2TS. Los nombres incompatibles con Windows se
@@ -92,13 +106,15 @@ conservan sus dependencias anteriores; este cambio no convierte todo PLIP en off
 
 `npm run test:transferencias`: pruebas HTTP reales con almacenamiento temporal externo,
 conservación byte a byte, ZIP sin compresión, nombres repetidos, rechazos, cancelación,
-eliminación, archivos estáticos y persistencia tras reiniciar.
+eliminación, archivos estáticos, vista inline/HEAD, rangos de video y persistencia tras reiniciar.
 
 `server/transferencias.browser.test.mjs`: prueba opcional con Playwright y Edge;
 requiere Vite en 127.0.0.1:5173 y `PLIP_PLAYWRIGHT` apuntando al paquete cuando no
 está instalado localmente. Monta dos sesiones del componente React contra un
 servidor local real; no usa ni altera el login ni datos comerciales. No equivale
 a una prueba entre dos computadoras físicas de la red.
+Incluye miniatura, visor de imagen, tres formas de cierre, devolución del foco y
+reproducción de un video WebM generado en memoria durante la prueba.
 
 Dependencias de servidor agregadas: `busboy` (multipart por streaming) y `archiver`
 (ZIP por streaming). No se agregó Playwright como dependencia de la aplicación.

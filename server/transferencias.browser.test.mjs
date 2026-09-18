@@ -60,16 +60,61 @@ try {
     const ctx = canvas.getContext('2d'); ctx.fillStyle = '#4267aa'; ctx.fillRect(0, 0, 32, 32);
     return canvas.toDataURL('image/png').split(',')[1];
   }), 'base64');
-  const video = Buffer.alloc(256 * 1024, 81);
+  const video = Buffer.from(await a.evaluate(async () => {
+    const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64;
+    const context = canvas.getContext('2d');
+    const stream = canvas.captureStream(10);
+    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+    const chunks = [];
+    recorder.ondataavailable = event => chunks.push(event.data);
+    const stopped = new Promise(resolve => { recorder.onstop = resolve; });
+    recorder.start();
+    for (let frame = 0; frame < 5; frame++) {
+      context.fillStyle = frame % 2 ? 'blue' : 'green'; context.fillRect(0, 0, 64, 64);
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    recorder.stop(); await stopped; stream.getTracks().forEach(track => track.stop());
+    return Array.from(new Uint8Array(await new Blob(chunks).arrayBuffer()));
+  }));
   await a.getByLabel('Seleccionar fotos y videos').setInputFiles([
     { name: 'foto.png', mimeType: 'image/png', buffer: photo },
-    { name: 'clip.mp4', mimeType: 'video/mp4', buffer: video },
+    { name: 'clip.webm', mimeType: 'video/webm', buffer: video },
   ]);
-  await a.getByRole('link', { name: 'Descargar clip.mp4', exact: true }).waitFor();
+  await a.getByRole('link', { name: 'Descargar clip.webm', exact: true }).waitFor();
   assert.equal(await a.getByText('Subido', { exact: true }).count(), 2);
   assert.equal(await a.getByRole('progressbar').count(), 2);
   await b.getByRole('button', { name: 'Actualizar', exact: true }).click();
   await b.getByRole('link', { name: 'Descargar foto.png', exact: true }).waitFor();
+  let previewDownloads = 0;
+  const countDownload = () => previewDownloads++;
+  b.on('download', countDownload);
+  const thumbnail = b.getByRole('button', { name: 'Ver foto.png', exact: true });
+  await thumbnail.locator('img').evaluate(image => image.decode());
+  assert.equal(await thumbnail.locator('img').evaluate(image => image.naturalWidth), 32);
+  for (const closing of ['button', 'escape', 'outside']) {
+    await thumbnail.click();
+    const viewer = b.getByRole('dialog', { name: 'foto.png', exact: true });
+    await viewer.waitFor();
+    await viewer.locator('img').evaluate(image => image.decode());
+    assert.equal(await viewer.locator('img').evaluate(image => image.naturalWidth), 32);
+    if (process.env.PLIP_SCREENSHOT && closing === 'button') await b.screenshot({ path: process.env.PLIP_SCREENSHOT + '.viewer.png' });
+    if (closing === 'button') await b.getByRole('button', { name: 'Cerrar visor' }).click();
+    else if (closing === 'escape') await b.keyboard.press('Escape');
+    else await b.mouse.click(2, 2);
+    await viewer.waitFor({ state: 'detached' });
+    assert.equal(await thumbnail.evaluate(element => element === document.activeElement), true);
+  }
+  await b.getByRole('button', { name: 'Ver clip.webm', exact: true }).click();
+  const videoViewer = b.getByRole('dialog', { name: 'clip.webm', exact: true });
+  await videoViewer.locator('video').waitFor();
+  await b.waitForFunction(() => document.querySelector('dialog video')?.readyState >= 2);
+  assert.equal(await videoViewer.locator('video').evaluate(element => element.controls && element.videoWidth === 64), true);
+  await videoViewer.locator('video').evaluate(element => element.play());
+  await b.waitForFunction(() => document.querySelector('dialog video')?.currentTime > 0);
+  await b.keyboard.press('Escape');
+  await videoViewer.waitFor({ state: 'detached' });
+  assert.equal(previewDownloads, 0, 'abrir el visor no inicia descargas');
+  b.off('download', countDownload);
   const [download] = await Promise.all([b.waitForEvent('download'), b.getByRole('link', { name: 'Descargar foto.png', exact: true }).click()]);
   assert.equal(download.suggestedFilename(), 'foto.png');
   assert.deepEqual(await readFile(await download.path()), photo);
@@ -77,13 +122,13 @@ try {
   assert.equal(zip.suggestedFilename(), 'transferencias.zip');
   assert.equal((await readFile(await zip.path())).subarray(0, 2).toString(), 'PK');
   b.once('dialog', dialog => dialog.accept());
-  await b.getByRole('button', { name: 'Eliminar clip.mp4', exact: true }).click();
-  await b.getByRole('link', { name: 'Descargar clip.mp4', exact: true }).waitFor({ state: 'detached' });
+  await b.getByRole('button', { name: 'Eliminar clip.webm', exact: true }).click();
+  await b.getByRole('link', { name: 'Descargar clip.webm', exact: true }).waitFor({ state: 'detached' });
   await a.getByRole('button', { name: 'Actualizar', exact: true }).click();
-  await a.getByRole('link', { name: 'Descargar clip.mp4', exact: true }).waitFor({ state: 'detached' });
+  await a.getByRole('link', { name: 'Descargar clip.webm', exact: true }).waitFor({ state: 'detached' });
   if (process.env.PLIP_SCREENSHOT) await a.screenshot({ path: process.env.PLIP_SCREENSHOT, fullPage: true });
   assert.deepEqual(errors, []);
-  console.log('PASS: dos sesiones React, carga múltiple, progreso, listado, descarga original, ZIP, eliminación y actualización.');
+  console.log('PASS: dos sesiones React, miniatura original, visor y tres cierres, reproducción de video, nombres, carga múltiple, progreso, descarga original, ZIP, eliminación y actualización.');
 } finally {
   await browser.close();
   await new Promise(resolve => server.close(resolve));

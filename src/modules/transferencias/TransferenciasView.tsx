@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Download, RefreshCw, Trash2, Upload } from 'lucide-react';
+import { Download, RefreshCw, Trash2, Upload, Play, ImageOff } from 'lucide-react';
+import TransferenciasViewer from './TransferenciasViewer';
 
 type SharedFile = { id: string; name: string; size: number; type: string; uploadedAt: string };
 type UploadStatus = { name: string; progress: number; state: 'pending' | 'uploading' | 'saving' | 'done' | 'error'; error?: string };
@@ -19,6 +20,17 @@ async function responseError(response: Response) {
   catch { return 'Transferencias no está disponible. Verificá la conexión y el servicio de archivos del servidor de PLIP.'; }
 }
 
+function FilePreview({ file, onOpen }: { file: SharedFile; onOpen: () => void }) {
+  const [failed, setFailed] = useState(false);
+  const video = file.type.startsWith('video/');
+  if (!video && !file.type.startsWith('image/')) return <span className="text-gray-500">Sin vista</span>;
+  return <button type="button" onClick={onOpen} aria-label={`Ver ${file.name}`}
+    className="flex items-center justify-center w-20 h-16 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:bg-gray-100 dark:hover:bg-gray-700">
+    {video ? <Play size={24} aria-hidden="true" /> : failed ? <ImageOff size={24} aria-hidden="true" />
+      : <img src={`${endpoint}/${file.id}/view`} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" onError={() => setFailed(true)} />}
+  </button>;
+}
+
 export default function TransferenciasView() {
   const [files, setFiles] = useState<SharedFile[]>([]);
   const [uploads, setUploads] = useState<UploadStatus[]>([]);
@@ -26,6 +38,7 @@ export default function TransferenciasView() {
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [viewing, setViewing] = useState<SharedFile | null>(null);
   const mounted = useRef(false);
   const xhr = useRef<XMLHttpRequest | null>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -83,7 +96,7 @@ export default function TransferenciasView() {
           };
           request.onerror = () => reject(new Error('Se perdió la conexión con el servidor.'));
           request.onabort = () => reject(new Error('Subida interrumpida.'));
-          const body = new FormData(); body.append('file', file); request.send(body);
+          const body = new FormData(); body.append('file', file, file.name); request.send(body);
         });
         update(index, { state: 'done', progress: 100 });
       } catch (cause) {
@@ -129,9 +142,10 @@ export default function TransferenciasView() {
       <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-50 dark:bg-gray-900"><tr>
-            <th className="p-3">Nombre</th><th className="p-3">Tipo / tamaño</th><th className="p-3">Fecha de subida</th><th className="p-3">Acciones</th>
+            <th className="p-3">Vista</th><th className="p-3">Nombre</th><th className="p-3">Tipo / tamaño</th><th className="p-3">Fecha de subida</th><th className="p-3">Acciones</th>
           </tr></thead>
           <tbody>{files.map(file => <tr key={file.id} className="border-t border-gray-200 dark:border-gray-700">
+            <td className="p-3"><FilePreview file={file} onOpen={() => setViewing(file)} /></td>
             <td className="p-3 break-all">{file.name}</td>
             <td className="p-3 whitespace-nowrap">{file.type.startsWith('video/') ? 'Video' : 'Foto'} · {sizeLabel(file.size)}</td>
             <td className="p-3 whitespace-nowrap">{new Date(file.uploadedAt).toLocaleString('es-AR')}</td>
@@ -143,6 +157,7 @@ export default function TransferenciasView() {
         </table>
         {!files.length && <p className="p-6 text-center text-gray-500">{loading ? 'Cargando archivos…' : error ? 'Listado no disponible.' : 'No hay archivos disponibles.'}</p>}
       </div>
+      {viewing && <TransferenciasViewer key={viewing.id} file={viewing} onClose={() => setViewing(null)} />}
     </section>
   );
 }

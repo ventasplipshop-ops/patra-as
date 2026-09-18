@@ -64,8 +64,39 @@ test('dos cajas suben nombres repetidos sin alterar bytes ni sobrescribir', asyn
 test('descarga individual desde otro cliente conserva bytes y nombre', async () => {
   const response = await fetch(`${base}/api/transferencias/${first.id}/download`);
   assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-disposition'), /^attachment;/);
   assert.match(response.headers.get('content-disposition'), /foto%20%C3%B1.jpg/);
   assert.deepEqual(Buffer.from(await response.arrayBuffer()), photo);
+});
+test('vista inline y HEAD conservan MIME, nombre y bytes sin crear copias', async () => {
+  const url = `${base}/api/transferencias/${first.id}/view`;
+  const response = await fetch(url);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type'), 'image/jpeg');
+  assert.match(response.headers.get('content-disposition'), /^inline;.*foto%20%C3%B1.jpg/);
+  assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+  assert.match(response.headers.get('content-security-policy'), /sandbox/);
+  assert.deepEqual(Buffer.from(await response.arrayBuffer()), photo);
+  const head = await fetch(url, { method: 'HEAD' });
+  assert.equal(head.status, 200);
+  assert.equal(head.headers.get('content-length'), String(photo.length));
+  assert.equal((await head.arrayBuffer()).byteLength, 0);
+  assert.deepEqual(await readdir(path.join(storage, first.id)), [first.name]);
+  assert.equal((await fetch(`${base}/api/transferencias/%2e%2e%5c/view`)).status, 404);
+  assert.equal((await fetch(`${base}/api/transferencias/no-id/view`)).status, 404);
+});
+test('conserva el nombre recibido, tanto de cámara como UUID, sin sustituirlo por el ID interno', async () => {
+  for (const name of ['IMG_0559.jpeg', 'e55321fd-0515-443d-9baf-28ac143a70f1.jpeg']) {
+    const item = await (await upload(name, photo)).json();
+    assert.equal(item.name, name);
+    assert.notEqual(item.id + '.jpeg', name);
+    assert.equal((await list()).find(file => file.id === item.id).name, name);
+    assert.deepEqual(await readFile(path.join(storage, item.id, name)), photo);
+    await fetch(`${base}/api/transferencias/${item.id}`, { method: 'DELETE' });
+  }
+  for (const name of ['../foto.jpg', 'CON.jpg', 'foto.svg', 'foto.html']) {
+    assert.equal((await upload(name, photo)).status, 400);
+  }
 });
 test('ZIP progresivo sin compresión contiene todos los originales, incluso nombres repetidos', async () => {
   const response = await fetch(base + '/api/transferencias/download-all');
@@ -95,9 +126,23 @@ test('acepta video y lo conserva; eliminación y actualización del listado', as
   assert.equal(response.status, 201);
   const item = await response.json();
   assert.equal(item.type, 'video/mp4');
+  const view = `${base}/api/transferencias/${item.id}/view`;
+  for (const [range, start, end] of [['bytes=2-15', 2, 15], ['bytes=-8', video.length - 8, video.length - 1], ['bytes=100-', 100, video.length - 1]]) {
+    const part = await fetch(view, { headers: { Range: range } });
+    assert.equal(part.status, 206);
+    assert.equal(part.headers.get('content-type'), 'video/mp4');
+    assert.equal(part.headers.get('content-range'), `bytes ${start}-${end}/${video.length}`);
+    assert.deepEqual(Buffer.from(await part.arrayBuffer()), video.subarray(start, end + 1));
+  }
+  for (const range of ['bytes=999999-', 'bytes=4-2', 'bytes=-0', 'bytes=0-1,4-5']) {
+    const invalid = await fetch(view, { headers: { Range: range } });
+    assert.equal(invalid.status, 416);
+    assert.equal(invalid.headers.get('content-range'), `bytes */${video.length}`);
+  }
   assert.deepEqual(Buffer.from(await (await fetch(`${base}/api/transferencias/${item.id}/download`)).arrayBuffer()), video);
   assert.equal((await fetch(`${base}/api/transferencias/${item.id}`, { method: 'DELETE' })).status, 204);
   assert.equal((await fetch(`${base}/api/transferencias/${item.id}/download`)).status, 404);
+  assert.equal((await fetch(view)).status, 404);
   assert.equal((await list()).length, 2);
 });
 test('rechaza formatos no admitidos, multipart inválido y exceso de tamaño sin residuos', async () => {
@@ -143,6 +188,10 @@ test('modo API sin dist conserva las cinco operaciones y persiste al recrear el 
   assert.deepEqual(await readFile(path.join(storage, item.id, item.name)), video);
   await close(); await start(true);
   assert.ok((await list()).some(file => file.id === item.id));
+  const inline = await fetch(`${base}/api/transferencias/${item.id}/view`);
+  assert.equal(inline.status, 200);
+  assert.match(inline.headers.get('content-disposition'), /^inline;/);
+  assert.deepEqual(Buffer.from(await inline.arrayBuffer()), video);
   const downloaded = await fetch(`${base}/api/transferencias/${item.id}/download`);
   assert.equal(downloaded.status, 200);
   assert.deepEqual(Buffer.from(await downloaded.arrayBuffer()), video);
