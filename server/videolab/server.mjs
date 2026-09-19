@@ -1,6 +1,6 @@
 import http from 'node:http';
 import { createReadStream, createWriteStream } from 'node:fs';
-import { mkdir, lstat, rm, rename, statfs } from 'node:fs/promises';
+import { mkdir, lstat, rm, rename, statfs, writeFile } from 'node:fs/promises';
 import { pipeline } from 'node:stream/promises';
 import { Readable, Transform } from 'node:stream';
 import { randomUUID } from 'node:crypto';
@@ -10,6 +10,7 @@ import { store } from './storage.mjs';
 import { check, id, text, validateProject } from './model.mjs';
 import { probe, command, buildRender } from './ffmpeg.mjs';
 import { jpegOrientation } from './exif.mjs';
+import { verifyDiagnostic } from './verify-diagnostic.mjs';
 
 const types={'.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.webp':'image/webp','.mp4':'video/mp4','.mov':'video/quicktime','.webm':'video/webm','.mp3':'audio/mpeg','.wav':'audio/wav','.m4a':'audio/mp4','.ogg':'audio/ogg','.flac':'audio/flac'};
 const json=(res,status,value)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
@@ -70,8 +71,15 @@ export async function createVideoLab({root=process.env.VIDEOLAB_DIR||'/data/vide
         buffer+=chunk;const lines=buffer.split('\n');buffer=lines.pop()||'';for(const line of lines){const match=/^out_time_us=(\d+)/.exec(line);if(match)job.progress=Math.min(0.99,Number(match[1])/1000000/timeline.seconds);}
       }});
       check(!controller.signal.aborted,'Trabajo cancelado');job.state='finalizing';await saveJob(job);
-      const verified=JSON.parse(await trackedCommand('verify',process.env.FFPROBE||'ffprobe',['-v','error','-threads','1','-count_frames','-show_streams','-show_format','-of','json',tmp],{signal:controller.signal,timeout:300000}));
+      const verifyStdout=await trackedCommand('verify',process.env.FFPROBE||'ffprobe',['-v','error','-threads','1','-count_frames','-show_streams','-show_format','-of','json',tmp],{signal:controller.signal,timeout:300000});
+      const stdoutFile=db.file('jobs',job.id,'verify.stdout.log');
+      job.verification={stdoutFile};
+      try {await writeFile(stdoutFile,verifyStdout);}
+      catch(error) {job.verification.stdoutWriteError=error.message;console.error('[VideoLab verify stdout write error]',job.id,error.message);}
+      const verified=JSON.parse(verifyStdout);
       const v=verified.streams.find(s=>s.codec_type==='video'),a=verified.streams.find(s=>s.codec_type==='audio');
+      job.verification={...job.verification,...verifyDiagnostic(verified,timeline)};
+      console.error('[VideoLab verify]',JSON.stringify({jobId:job.id,...job.verification}));
       check(v?.codec_name==='h264'&&v.pix_fmt==='yuv420p'&&v.width===timeline.size[0]&&v.height===timeline.size[1]&&v.avg_frame_rate==='30/1'&&Number(v.nb_read_frames)===timeline.frames&&Math.abs(Number(verified.format.duration)-timeline.seconds)<=0.034&&a?.codec_name==='aac'&&Number(a.sample_rate)===48000&&a.channels===2,'El resultado no pasó la validación de duración/formato');
       check(!controller.signal.aborted,'Trabajo cancelado');await rename(tmp,db.file('outputs',job.id,'mp4'));job.state='completed';job.progress=1;job.finishedAt=new Date().toISOString();job.duration=timeline.seconds;
     } catch(error) {
