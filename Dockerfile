@@ -19,6 +19,17 @@ USER 1000:1000
 EXPOSE 8080
 CMD ["node", "server/plip-server.mjs"]
 
+# VideoLab owns its data and serial render queue; no Transferencias filesystem mount.
+FROM node:20-bookworm-slim AS videolab
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+ENV NODE_ENV=production PORT=8090 VIDEOLAB_DIR=/data/videolab MUSICA_DIR=/data/musica
+COPY server/videolab ./server/videolab
+USER 1000:1000
+EXPOSE 8090
+CMD ["node", "--max-old-space-size=96", "server/videolab/server.mjs"]
+
 # Keep nginx as the default/final frontend image.
 FROM nginx:stable-alpine AS frontend
 COPY --from=build /app/dist /usr/share/nginx/html

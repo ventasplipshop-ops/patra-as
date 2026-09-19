@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "start": "node server/plip-server.mjs",
+    "start:videolab": "node server/videolab/server.mjs",
+    "test:videolab:browser": "node server/videolab/browser.check.mjs",
+    "test:videolab": "node --test server/videolab/*.test.mjs",
     "test:transferencias": "node --test server/transferencias.test.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
