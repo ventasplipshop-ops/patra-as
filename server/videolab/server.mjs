@@ -58,19 +58,36 @@ export async function createVideoLab({root=process.env.VIDEOLAB_DIR||'/data/vide
     if(active||closing)return;
     const job=[...jobs.values()].find(j=>j.state==='queued');if(!job)return;
     const controller=new AbortController();active={job,controller};const tmp=db.file('tmp',job.id,'mp4');
+    const processes=[];
+    const trackedCommand=(phase,binary,args,options)=>runCommand(binary,args,{...options,
+      stderrFile:db.file('jobs',job.id,`${phase}.stderr.log`),
+      onDiagnostic:diagnostic=>processes.push({phase,...diagnostic})});
     try {
       job.state='preparing';await saveJob(job);await freeSpace();
       const assets=new Map();for(const scene of [...job.project.scenes,...(job.project.music?[job.project.music]:[])])assets.set(scene.assetId,await asset(scene.assetId,job.project.id));
       const {args,timeline}=buildRender(job.project,assets,tmp);job.state='rendering';job.startedAt=new Date().toISOString();await saveJob(job);
-      let buffer='';await runCommand(process.env.FFMPEG||'ffmpeg',args,{signal:controller.signal,timeout:2*60*60*1000,onProgress:chunk=>{
+      let buffer='';await trackedCommand('render',process.env.FFMPEG||'ffmpeg',args,{signal:controller.signal,timeout:2*60*60*1000,onProgress:chunk=>{
         buffer+=chunk;const lines=buffer.split('\n');buffer=lines.pop()||'';for(const line of lines){const match=/^out_time_us=(\d+)/.exec(line);if(match)job.progress=Math.min(0.99,Number(match[1])/1000000/timeline.seconds);}
       }});
       check(!controller.signal.aborted,'Trabajo cancelado');job.state='finalizing';await saveJob(job);
-      const verified=JSON.parse(await runCommand(process.env.FFPROBE||'ffprobe',['-v','error','-threads','1','-count_frames','-show_streams','-show_format','-of','json',tmp],{signal:controller.signal,timeout:300000}));
+      const verified=JSON.parse(await trackedCommand('verify',process.env.FFPROBE||'ffprobe',['-v','error','-threads','1','-count_frames','-show_streams','-show_format','-of','json',tmp],{signal:controller.signal,timeout:300000}));
       const v=verified.streams.find(s=>s.codec_type==='video'),a=verified.streams.find(s=>s.codec_type==='audio');
       check(v?.codec_name==='h264'&&v.pix_fmt==='yuv420p'&&v.width===timeline.size[0]&&v.height===timeline.size[1]&&v.avg_frame_rate==='30/1'&&Number(v.nb_read_frames)===timeline.frames&&Math.abs(Number(verified.format.duration)-timeline.seconds)<=0.034&&a?.codec_name==='aac'&&Number(a.sample_rate)===48000&&a.channels===2,'El resultado no pasó la validación de duración/formato');
       check(!controller.signal.aborted,'Trabajo cancelado');await rename(tmp,db.file('outputs',job.id,'mp4'));job.state='completed';job.progress=1;job.finishedAt=new Date().toISOString();job.duration=timeline.seconds;
-    } catch(error) {job.state=controller.signal.aborted?'cancelled':'failed';job.error=error.message.slice(-2000);}
+    } catch(error) {
+      job.failure={stage:job.state,reason:error.processDiagnostic?.reason||(controller.signal.aborted?'cancelled':'backend_exception'),
+        error:{name:error.name,message:error.message,code:error.code??null,stack:error.stack??null},processes};
+      job.state=controller.signal.aborted?'cancelled':'failed';job.error=error.message;
+      console.error('[VideoLab job failure]',JSON.stringify({jobId:job.id,state:job.state,...job.failure}));
+      // Replay the complete captured stderr to container logs, not a truncated message.
+      for(const diagnostic of processes) if(diagnostic.stderrFile) {
+        console.error(`[VideoLab stderr BEGIN] job=${job.id} phase=${diagnostic.phase} file=${diagnostic.stderrFile}`);
+        try {for await(const chunk of createReadStream(diagnostic.stderrFile)) {
+          await new Promise((resolve,reject)=>process.stderr.write(chunk,error=>error?reject(error):resolve()));
+        }} catch(logError) {console.error('[VideoLab stderr read error]',job.id,logError.message);}
+        console.error(`\n[VideoLab stderr END] job=${job.id} phase=${diagnostic.phase}`);
+      }
+    }
     finally {await rm(tmp,{force:true});await saveJob(job);active=null;void pump().catch(console.error);}
   }
   const server=http.createServer(async(req,res)=>{

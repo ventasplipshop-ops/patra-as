@@ -1,20 +1,45 @@
 import { spawn } from 'node:child_process';
+import { createWriteStream } from 'node:fs';
+import { finished } from 'node:stream/promises';
 import { check, validateProject } from './model.mjs';
 const demuxers='image2,jpeg_pipe,png_pipe,webp_pipe,mov,matroska,webm,mp3,wav,ogg,flac';
 import { orientationFilters } from './exif.mjs';
 
-export function command(binary,args,{signal,onProgress,timeout=120000,maxOutput=2000000}={}) {
+export function command(binary,args,{signal,onProgress,timeout=120000,maxOutput=2000000,stderrFile,onDiagnostic}={}) {
   return new Promise((resolve,reject)=>{
-    const child=spawn(binary,args,{shell:false,windowsHide:true,stdio:['ignore','pipe','pipe']});
-    let out='',err='',failure; let killer;
+    const errorInfo=e=>({name:e.name,message:e.message,code:e.code??null,syscall:e.syscall??null});
+    let child;
+    try {child=spawn(binary,args,{shell:false,windowsHide:true,stdio:['ignore','pipe','pipe']});}
+    catch(error) {
+      const diagnostic={binary,exitCode:null,signal:null,processError:errorInfo(error),reason:'spawn_throw',
+        stderrFile:stderrFile??null,stderrBytes:0,stderrLogError:null,stderrHead:'',stderrTail:''};
+      onDiagnostic?.(diagnostic);reject(Object.assign(error,{processDiagnostic:diagnostic}));return;
+    }
+    let out='',head='',tail='',stderrBytes=0,failure,reason,processError=null,stderrLogError=null; let killer;
+    // Stream the complete stderr to disk with backpressure; only excerpts live in RAM.
+    const log=stderrFile?createWriteStream(stderrFile):null;
+    const logDone=log?finished(log).catch(e=>{stderrLogError=errorInfo(e);child.stderr.unpipe(log);child.stderr.resume();}):Promise.resolve();
+    if(log)child.stderr.pipe(log);
     const stop=()=>{ child.kill('SIGTERM'); killer=setTimeout(()=>child.kill('SIGKILL'),3000); };
-    const abort=()=>{failure=new Error('Trabajo cancelado'); stop();};
+    const abort=()=>{failure=new Error('Trabajo cancelado');reason='cancelled'; stop();};
     signal?.addEventListener('abort',abort,{once:true}); if(signal?.aborted) abort();
-    const timer=setTimeout(()=>{failure=new Error('Se agotó el tiempo permitido');stop();},timeout);
-    child.stdout.on('data',b=>{out+=b; onProgress?.(b.toString()); if(out.length>maxOutput){failure=new Error('Salida excesiva del proceso');stop();}});
-    child.stderr.on('data',b=>{err=(err+b).slice(-12000);});
-    child.on('error',e=>{clearTimeout(timer);clearTimeout(killer);signal?.removeEventListener('abort',abort);reject(e);});
-    child.on('close',code=>{clearTimeout(timer);clearTimeout(killer);signal?.removeEventListener('abort',abort); if(failure || code!==0) reject(failure || new Error(`FFmpeg/ffprobe (${code}): ${err}`)); else resolve(out);});
+    const timer=setTimeout(()=>{failure=new Error('Se agotó el tiempo permitido');reason='timeout';stop();},timeout);
+    child.stdout.on('data',b=>{out+=b; onProgress?.(b.toString()); if(out.length>maxOutput){failure=new Error('Salida excesiva del proceso');reason='stdout_limit';stop();}});
+    child.stderr.on('data',b=>{stderrBytes+=b.length;const text=b.toString();head=(head+text).slice(0,4000);tail=(tail+text).slice(-4000);});
+    // close follows error and waits for stdio closure, preserving the final diagnostics.
+    child.on('error',e=>{processError=errorInfo(e);clearTimeout(timer);clearTimeout(killer);signal?.removeEventListener('abort',abort);});
+    child.on('close',async(code,exitSignal)=>{
+      clearTimeout(timer);clearTimeout(killer);signal?.removeEventListener('abort',abort);
+      await logDone;
+      const diagnostic={binary,exitCode:code,signal:exitSignal??null,processError,
+        reason:reason||(processError?'process_error':code!==0?(exitSignal?'signal':'non_zero_exit'):'completed'),
+        stderrFile:stderrFile??null,stderrBytes,stderrLogError,stderrHead:head,stderrTail:tail};
+      onDiagnostic?.(diagnostic);
+      if(failure || processError || code!==0) {
+        const detail=failure?.message||processError?.message||'El proceso terminó sin éxito';
+        reject(Object.assign(new Error(`${detail} (reason=${diagnostic.reason}, exitCode=${code}, signal=${exitSignal??'none'})`),{processDiagnostic:diagnostic}));
+      } else resolve(out);
+    });
   });
 }
 export async function probe(file,signal) {
