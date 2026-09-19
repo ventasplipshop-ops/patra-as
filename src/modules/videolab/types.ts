@@ -1,3 +1,4 @@
+import { uuidV4 } from './uuid';
 export type Scene = {id:string; name:string; type:string; instruction:string; suggestedFrames?:number; frames:number; assetId?:string; inFrame:number; fit:'contain'|'cover'; x:number; y:number; muted:boolean; volume:number; transition:'cut'|'dissolve'; overlap:number};
 export type Music = {assetId:string; inFrame:number; frames:number; startFrame:number; volume:number; fadeIn:number; fadeOut:number};
 export type Project = {version:1; id:string; revision:number; name:string; format:'9:16'|'4:5'|'1:1'|'16:9'; muteAll:boolean; scenes:Scene[]; music?:Music; guionId?:string; updatedAt?:string};
@@ -5,7 +6,7 @@ export type Asset = {id:string; name:string; type:string; kind:'photo'|'video'|'
 export type Job = {id:string; state:string; progress:number; error?:string; createdAt:string};
 export type Guion = {id:string; nombre:string; descripcion:string; objetivo:string; escenas:unknown; musica_sugerida:string; activo:boolean};
 export const visualTypes=['image/jpeg','image/png','image/webp','video/mp4','video/quicktime','video/webm'];
-export const scene = (name='Nueva escena'):Scene=>({id:crypto.randomUUID(),name,type:'contenido',instruction:'',suggestedFrames:90,frames:90,inFrame:0,fit:'contain',x:.5,y:.5,muted:false,volume:1,transition:'cut',overlap:0});
+export const scene = (name='Nueva escena'):Scene=>({id:uuidV4(),name,type:'contenido',instruction:'',suggestedFrames:90,frames:90,inFrame:0,fit:'contain',x:.5,y:.5,muted:false,volume:1,transition:'cut',overlap:0});
 export function duration(p:Project) {return p.scenes.reduce((n,s)=>n+s.frames-s.overlap,0);}
 export function fromGuion(g:Guion):Project {
   if(!g.nombre.trim())throw new Error('El Guion necesita un nombre.');
