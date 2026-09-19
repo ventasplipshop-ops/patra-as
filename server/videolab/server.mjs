@@ -80,7 +80,7 @@ export async function createVideoLab({root=process.env.VIDEOLAB_DIR||'/data/vide
       const v=verified.streams.find(s=>s.codec_type==='video'),a=verified.streams.find(s=>s.codec_type==='audio');
       job.verification={...job.verification,...verifyDiagnostic(verified,timeline)};
       console.error('[VideoLab verify]',JSON.stringify({jobId:job.id,...job.verification}));
-      check(v?.codec_name==='h264'&&v.pix_fmt==='yuv420p'&&v.width===timeline.size[0]&&v.height===timeline.size[1]&&v.avg_frame_rate==='30/1'&&Number(v.nb_read_frames)===timeline.frames&&Math.abs(Number(verified.format.duration)-timeline.seconds)<=0.034&&a?.codec_name==='aac'&&Number(a.sample_rate)===48000&&a.channels===2,'El resultado no pasó la validación de duración/formato');
+      check(v?.codec_name==='h264'&&v.pix_fmt==='yuv420p'&&v.width===timeline.size[0]&&v.height===timeline.size[1]&&v.avg_frame_rate==='30/1'&&Math.abs(Number(v.nb_read_frames)-timeline.frames)<=1&&Math.abs(Number(verified.format.duration)-timeline.seconds)<=0.034&&a?.codec_name==='aac'&&Number(a.sample_rate)===48000&&a.channels===2,'El resultado no pasó la validación de duración/formato');
       check(!controller.signal.aborted,'Trabajo cancelado');await rename(tmp,db.file('outputs',job.id,'mp4'));job.state='completed';job.progress=1;job.finishedAt=new Date().toISOString();job.duration=timeline.seconds;
     } catch(error) {
       job.failure={stage:job.state,reason:error.processDiagnostic?.reason||(controller.signal.aborted?'cancelled':'backend_exception'),

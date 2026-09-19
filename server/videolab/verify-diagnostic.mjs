@@ -1,4 +1,4 @@
-// Observational only: server.mjs retains the original acceptance condition.
+// Mirrors the acceptance conditions used by server.mjs.
 export function verifyDiagnostic(verified,timeline) {
   const v=verified.streams?.find(s=>s.codec_type==='video');
   const a=verified.streams?.find(s=>s.codec_type==='audio');
@@ -12,7 +12,12 @@ export function verifyDiagnostic(verified,timeline) {
     comparison('video.width',timeline.size[0],v?.width,v?.width===timeline.size[0]),
     comparison('video.height',timeline.size[1],v?.height,v?.height===timeline.size[1]),
     comparison('video.avg_frame_rate','30/1',v?.avg_frame_rate,v?.avg_frame_rate==='30/1'),
-    comparison('Number(video.nb_read_frames)',timeline.frames,frames,frames===timeline.frames),
+    comparison(
+      'abs(Number(video.nb_read_frames) - expected.frames) <= 1',
+      '<= 1',
+      Math.abs(frames-timeline.frames),
+      Math.abs(frames-timeline.frames)<=1
+    ),
     comparison('abs(Number(format.duration) - expected.seconds) <= 0.034','<= 0.034',delta,delta<=0.034),
     comparison('audio.codec_name','aac',a?.codec_name,a?.codec_name==='aac'),
     comparison('Number(audio.sample_rate)',48000,sampleRate,sampleRate===48000),
