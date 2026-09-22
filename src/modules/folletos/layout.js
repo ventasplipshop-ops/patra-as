@@ -1,10 +1,20 @@
 // Geometría física en puntos PDF. No depende de la resolución de rasterizado.
 globalThis.FolletosLayout = (() => {
   const PT_PER_MM = 72 / 25.4;
+  const sheet = (id, label, widthMm, heightMm, displayWidthMm=widthMm, displayHeightMm=heightMm) =>
+    Object.freeze({ id, label, widthMm, heightMm, displayWidthMm, displayHeightMm,
+      widthPt: widthMm * PT_PER_MM, heightPt: heightMm * PT_PER_MM });
   const SHEETS = Object.freeze([
-    Object.freeze({ id: '7x10in', label: '7×10 pulgadas', widthMm: 177.8, heightMm: 254,
-      widthPt: 7 * 72, heightPt: 10 * 72 })
+    sheet('a4', 'A4', 210, 297),
+    sheet('a3', 'A3', 297, 420),
+    sheet('a3plus', 'A3+', 329, 483),
+    sheet('legal', 'Legal', 215.9, 355.6, 216, 356),
+    sheet('oficio', 'Oficio', 216, 330),
+    Object.freeze({ id: 'custom', label: 'Personalizada', custom: true })
   ]);
+  const V5_SHEET_FIXTURE = Object.freeze({ id:'v5-7x10in', label:'7×10 pulgadas V5',
+    widthMm:177.8, heightMm:254, displayWidthMm:177.8, displayHeightMm:254,
+    widthPt:7*72, heightPt:10*72 });
   // Las medidas terminadas describen el formato comercial y sirven como escala de referencia.
   // El tamaño físico de salida se calcula para ocupar la hoja; no queda fijado a estos milímetros.
   const PRODUCTS = Object.freeze([
@@ -67,5 +77,5 @@ globalThis.FolletosLayout = (() => {
       startXPt: resolvedMargins.left, startTopPt: resolvedMargins.top,
     };
   }
-  return Object.freeze({ PT_PER_MM, SHEETS, PRODUCTS, calculate });
+  return Object.freeze({ PT_PER_MM, SHEETS, V5_SHEET_FIXTURE, PRODUCTS, calculate });
 })();

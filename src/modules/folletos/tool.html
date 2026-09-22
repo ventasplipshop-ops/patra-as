@@ -72,6 +72,8 @@
   .format-grid button[aria-pressed=true], .segmented button[aria-pressed=true] { background:#111; border-color:#111; color:#fff; }
   .segmented { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
   .simple-controls { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .custom-sheet { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+  .custom-sheet[hidden] { display:none; }
   .simple-controls input { min-height:43px; }
   .summary { padding:15px; margin-top:16px; background:#eef1f5; border-radius:10px; }
   .summary strong { display:block; font-size:18px; line-height:1.3; }
@@ -109,7 +111,12 @@
       <div class="file-tile" id="fileTile"><img id="fileThumb" alt="" hidden><div><strong id="fileName">Sin archivo seleccionado</strong><small id="fileMeta">JPG, PNG, WebP o PDF</small></div></div>
     </div>
     <div class="field-group"><label for="formato">2 · Producto</label><select id="formato"></select></div>
-    <div class="field-group"><label for="sheet">3 · Hoja</label><select id="sheet"></select></div>
+    <div class="field-group"><label for="sheet">3 · Hoja</label><select id="sheet"></select>
+      <div class="custom-sheet" id="customSheetFields" hidden>
+        <div><label for="customSheetWidth">Ancho (mm)</label><input id="customSheetWidth" type="number" min="50" max="2000" step="0.1" value="210"></div>
+        <div><label for="customSheetHeight">Alto (mm)</label><input id="customSheetHeight" type="number" min="50" max="2000" step="0.1" value="297"></div>
+      </div>
+    </div>
     <div class="field-group">
       <label for="dpi">4 · Calidad</label>
       <select id="dpi">
@@ -210,7 +217,7 @@
   </section>
 
   <section class="preview-wrap">
-    <div class="preview-head"><h2>Vista previa de la hoja</h2><span class="sheet-tag">7 × 10 pulgadas</span></div>
+    <div class="preview-head"><h2>Vista previa de la hoja</h2><span class="sheet-tag" id="sheetTag"></span></div>
     <div class="preview-stage">
       <canvas id="preview" width="700" height="1000" aria-label="Vista previa de hoja 7 por 10 pulgadas"></canvas>
     </div>
@@ -233,6 +240,10 @@ const $ = id => document.getElementById(id);
 const archivo = $('archivo');
 const formato = $('formato');
 const sheet = $('sheet');
+const customSheetFields = $('customSheetFields');
+const customSheetWidth = $('customSheetWidth');
+const customSheetHeight = $('customSheetHeight');
+const sheetTag = $('sheetTag');
 const dpi = $('dpi');
 const margin = $('margin');
 const layoutInfo = $('layoutInfo');
@@ -281,7 +292,18 @@ function clamp(n, min, max, fallback=0) {
 let controlShape = '';
 
 function selectedFormat() { return PRODUCTS.find(item => item.id === formato.value); }
-function selectedSheet() { return SHEETS.find(item => item.id === sheet.value); }
+function sheetOptionLabel(item) {
+  if (item.custom) return item.label;
+  return `${item.label} · ${item.displayWidthMm} × ${item.displayHeightMm} mm`;
+}
+function selectedSheet() {
+  const selected = SHEETS.find(item => item.id === sheet.value) || SHEETS[0];
+  if (!selected.custom) return selected;
+  const widthMm = clamp(customSheetWidth.value, 50, 2000, 210);
+  const heightMm = clamp(customSheetHeight.value, 50, 2000, 297);
+  return { id:'custom', label:'Personalizada', custom:true, widthMm, heightMm,
+    displayWidthMm:widthMm, displayHeightMm:heightMm, widthPt:widthMm*MM_TO_PT, heightPt:heightMm*MM_TO_PT };
+}
 function currentLayout(s) { return calculate({ product: selectedFormat(), sheet: selectedSheet(), margins: s.sheetBleed, gapPt: s.gapPt }); }
 
 function clearDownload() {
@@ -449,6 +471,7 @@ function drawPreview() {
   layoutInfo.textContent = `${layout.count} piezas por hoja · Distribución ${layout.columns} × ${layout.rows}`;
   sheetInfo.textContent = `${selectedFormat().label} · resultado ${(layout.resultWidthPt*mm).toFixed(2)} × ${(layout.resultHeightPt*mm).toFixed(2)} mm · ${s.dpi} DPI`;
   rotationInfo.textContent = `Hoja ${selectedSheet().label}${layout.sheetRotated ? ' rotada' : ''}${layout.rotated ? ' · piezas rotadas' : ''}`;
+  sheetTag.textContent = `${selectedSheet().label} · ${selectedSheet().displayWidthMm} × ${selectedSheet().displayHeightMm} mm`;
   const targetWidth = layout.sheetRotated ? 1000 : 700;
   const targetHeight = layout.sheetRotated ? 700 : 1000;
   if (preview.width !== targetWidth || preview.height !== targetHeight) { preview.width = targetWidth; preview.height = targetHeight; }
@@ -664,7 +687,11 @@ async function generatePdf() {
 
 archivo.addEventListener('change', loadSelected);
 formato.addEventListener('change', () => { clearDownload(); drawPreview(); });
-sheet.addEventListener('change', () => { clearDownload(); drawPreview(); });
+sheet.addEventListener('change', () => {
+  customSheetFields.hidden = sheet.value !== 'custom';
+  clearDownload(); drawPreview();
+});
+[customSheetWidth, customSheetHeight].forEach(input => input.addEventListener('input', () => { clearDownload(); drawPreview(); }));
 dpi.addEventListener('change', () => { clearDownload(); drawPreview(); });
 margin.addEventListener('input', () => {
   [bleedTop, bleedBottom, bleedLeft, bleedRight].forEach(el => el.value = margin.value);
@@ -681,7 +708,7 @@ generar.addEventListener('click', generatePdf);
 saveTransferencias.addEventListener('click', saveGeneratedPdf);
 reset.addEventListener('click', () => {
   offsetX.value=0; offsetY.value=0; escala.value=100; gap.value=3.048; bleed.value=0; bleedTop.value=0; bleedBottom.value=0; bleedLeft.value=0; bleedRight.value=0; printerProfile.value='epson'; guias.checked=true; modo.value='color'; umbral.value=190;
-  formato.value='7x10'; sheet.value='7x10in'; dpi.value='200'; margin.value='0'; clearDownload();
+  formato.value='7x10'; sheet.value='a4'; dpi.value='200'; margin.value='0'; customSheetFields.hidden=true; clearDownload();
   [...rowControls.querySelectorAll('input'), ...colControls.querySelectorAll('input')].forEach(el => el.value=0);
   pieceGrid.querySelectorAll('input').forEach(el => el.value=0);
   valorEscala.textContent='100.0'; valorUmbral.textContent='190'; $('umbralBox').style.display='none'; drawPreview();
@@ -689,8 +716,8 @@ reset.addEventListener('click', () => {
 
 formato.innerHTML = PRODUCTS.map(item => `<option value="${item.id}">${item.label} cm</option>`).join('');
 formato.value = '7x10';
-sheet.innerHTML = SHEETS.map(item => `<option value="${item.id}">${item.label}</option>`).join('');
-sheet.value = '7x10in';
+sheet.innerHTML = SHEETS.map(item => `<option value="${item.id}">${sheetOptionLabel(item)}</option>`).join('');
+sheet.value = 'a4';
 drawPreview();
 </script>
 </body>

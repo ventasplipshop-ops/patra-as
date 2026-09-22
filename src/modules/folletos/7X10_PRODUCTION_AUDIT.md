@@ -2,6 +2,10 @@
 
 Referencia funcional: `impresiones folletos/impresion_7x10_v5.html` (solo lectura).
 
+La hoja histórica de 177,8×254 mm se conserva únicamente como `V5_SHEET_FIXTURE` para estas
+comprobaciones. No forma parte del catálogo productivo ni del selector. La hoja predeterminada de
+producción es A4.
+
 ## Resultado del original V5
 
 - Hoja PDF: 504×720 pt = 7×10 pulgadas = 177,8×254 mm, orientación vertical.

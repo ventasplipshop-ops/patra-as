@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 import './layout.js';
 
-const { PRODUCTS, SHEETS, calculate } = globalThis.FolletosLayout;
+const { PRODUCTS, SHEETS, V5_SHEET_FIXTURE, calculate } = globalThis.FolletosLayout;
 const gapPt = 3.048 * 72 / 25.4;
 
 test('producto comercial y receta de producción 7×10 están separados', () => {
@@ -13,8 +13,17 @@ test('producto comercial y receta de producción 7×10 están separados', () => 
   assert.deepEqual(product.production, {cutGapMm:3.048, fit:'contain', uniformRotationOnly:true});
 });
 
+test('catálogo productivo comienza en A4 y excluye la hoja histórica V5', () => {
+  assert.deepEqual(SHEETS.map(item => item.id), ['a4','a3','a3plus','legal','oficio','custom']);
+  assert.deepEqual([SHEETS[0].widthMm, SHEETS[0].heightMm], [210,297]);
+  const legal = SHEETS.find(item => item.id === 'legal');
+  assert.deepEqual([legal.widthMm, legal.heightMm, legal.displayWidthMm, legal.displayHeightMm], [215.9,355.6,216,356]);
+  assert.equal(SHEETS.some(item => item.id === V5_SHEET_FIXTURE.id), false);
+  assert.deepEqual([V5_SHEET_FIXTURE.widthMm, V5_SHEET_FIXTURE.heightMm], [177.8,254]);
+});
+
 test('layout propuesto reproduce exactamente la cuadrícula del original V5', () => {
-  const layout = calculate({product: PRODUCTS.find(item => item.id === '7x10')});
+  const layout = calculate({sheet: V5_SHEET_FIXTURE, product: PRODUCTS.find(item => item.id === '7x10')});
   const mm = 25.4 / 72;
   assert.deepEqual([layout.sheet.widthPt, layout.sheet.heightPt], [504, 720]);
   assert.deepEqual([layout.columns, layout.rows, layout.count, layout.sheetRotated, layout.rotated], [3, 3, 9, false, false]);
@@ -27,7 +36,7 @@ test('layout propuesto reproduce exactamente la cuadrícula del original V5', ()
 });
 
 test('una imagen 7:10 conserva la reducción real aplicada por V5', () => {
-  const layout = calculate({product: PRODUCTS.find(item => item.id === '7x10')});
+  const layout = calculate({sheet: V5_SHEET_FIXTURE, product: PRODUCTS.find(item => item.id === '7x10')});
   const mm = 25.4 / 72;
   const artworkWidthPt = Math.min(layout.pieceWidthPt, layout.pieceHeightPt * .7);
   const artworkHeightPt = artworkWidthPt / .7;
@@ -37,7 +46,7 @@ test('una imagen 7:10 conserva la reducción real aplicada por V5', () => {
 });
 
 test('las nueve cajas ocupan las mismas coordenadas físicas que el PDF V5', () => {
-  const layout = calculate({product: PRODUCTS.find(item => item.id === '7x10')});
+  const layout = calculate({sheet: V5_SHEET_FIXTURE, product: PRODUCTS.find(item => item.id === '7x10')});
   const positions = [];
   for (let row=0; row<layout.rows; row++) for (let column=0; column<layout.columns; column++) {
     positions.push({
@@ -81,6 +90,8 @@ test('continúan las rutas de carga, PDF y resolución seleccionable', async () 
   assert.match(html, /id="archivo"/);
   assert.match(html, /id="formato"/);
   assert.match(html, /id="sheet"/);
+  assert.match(html, /sheet\.value = 'a4'/);
+  assert.match(html, /id="customSheetWidth"/);
   assert.match(html, /<option value="200" selected>/);
   assert.match(html, /<option value="300">/);
   assert.match(html, /PDFDocument\.create\(\)/);
