@@ -173,6 +173,16 @@ try {
   await folleto.locator('#status').filter({ hasText: 'Imagen cargada: 32×32 px.' }).waitFor();
   assert.equal(await folleto.locator('#archivo').evaluate(input => input.files[0].name), 'segunda.png');
   assert.deepEqual(await (await fetch(apiOrigin + '/api/transferencias')).json(), beforeImport, 'importar no modifica ni elimina los originales');
+  await folleto.getByRole('button', { name: 'Generar PDF', exact: true }).click();
+  await folleto.getByRole('button', { name: 'Guardar en Transferencias', exact: true }).waitFor();
+  assert.equal(await folleto.getByRole('link', { name: 'Descargar PDF' }).isVisible(), true);
+  await folleto.getByRole('button', { name: 'Guardar en Transferencias', exact: true }).click();
+  await folleto.locator('#status').filter({ hasText: '✓ Guardado en Transferencias' }).waitFor();
+  assert.equal(await folleto.getByRole('button', { name: '✓ Guardado en Transferencias' }).isDisabled(), true);
+  const stored = (await (await fetch(apiOrigin + '/api/transferencias')).json()).filter(file => file.type === 'application/pdf');
+  assert.equal(stored.length, 1);
+  assert.match(stored[0].name, /^folletos_7x10_4piezas\.pdf$/);
+  assert.equal(await folleto.getByRole('link', { name: 'Descargar PDF' }).isVisible(), true);
   const listUrl = apiOrigin + '/api/transferencias';
   await b.route(listUrl, route => route.fulfill({ status: 503, contentType: 'application/json', body: '{}' }));
   await folleto.getByRole('button', { name: 'Elegir desde Transferencias' }).click();

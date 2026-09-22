@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Imposición 7×10 V3 — 3×3 — Ajuste individual</title>
+<title>PLIP · Imposición</title>
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
@@ -52,9 +52,48 @@
   .compact3 label { font-size:12px; }
   .compact3 input { padding:8px; }
   .axisnote { font-size:11.5px; color:#666; margin-top:6px; }
+  .app { width:min(1440px,calc(100% - 28px)); grid-template-columns:minmax(0,1fr) 360px; gap:16px; margin:14px auto; }
+  .preview-wrap { grid-column:1; grid-row:1; position:sticky; top:14px; }
+  .panel { grid-column:2; grid-row:1; padding:20px; }
+  .panel h1 { font-size:22px; }
+  .preview-stage { min-height:690px; padding:20px; background:#e6e9ed; align-items:center; }
+  .preview-stage canvas { width:min(100%,490px); max-height:72vh; object-fit:contain; box-shadow:0 8px 30px #17233535; }
+  .preview-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
+  .preview-head h2 { margin:0; }
+  .sheet-tag { font-size:12px; font-weight:700; background:#eef1f5; padding:8px 10px; border-radius:8px; }
+  .field-group { border-top:1px solid #e5e5e5; padding-top:14px; margin-top:14px; }
+  .field-group > label, .field-group > legend { font-size:13px; font-weight:700; margin-bottom:9px; }
+  .file-tile { display:flex; gap:10px; align-items:center; padding:10px; border:1px solid #d7dce2; border-radius:10px; min-height:68px; }
+  .file-tile img { width:48px; height:48px; object-fit:cover; border-radius:6px; background:#eee; }
+  .file-tile strong { display:block; max-width:235px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }
+  .file-tile small { color:#656b74; }
+  .format-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .format-grid button, .segmented button { border:1px solid #ccd1d8; border-radius:8px; background:#fff; min-height:43px; font-size:13px; font-weight:700; cursor:pointer; }
+  .format-grid button[aria-pressed=true], .segmented button[aria-pressed=true] { background:#111; border-color:#111; color:#fff; }
+  .segmented { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .simple-controls { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .simple-controls input { min-height:43px; }
+  .summary { padding:15px; margin-top:16px; background:#eef1f5; border-radius:10px; }
+  .summary strong { display:block; font-size:18px; line-height:1.3; }
+  .summary span { display:block; color:#4b5563; font-size:13px; margin-top:5px; }
+  .summary em { display:block; color:#175f39; font-size:12px; font-style:normal; font-weight:700; margin-top:8px; }
+  .btn-primary { min-height:52px; margin-top:14px; font-size:17px; }
+  #downloadResult:not([hidden]) { display:block; text-align:center; text-decoration:none; }
+  .result-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+  .result-actions .btn { margin:0; min-height:46px; font-size:14px; }
+  .result-actions #saveTransferencias { background:#e4edf6; color:#153b5c; }
+  .result-actions [hidden] { display:none !important; }
+  .saved-status { color:#17623a; font-weight:700; }
+  .advanced-block { margin-top:14px; }
+  .advanced-block > summary { padding:12px; }
+  .advanced-block .section-title { margin-top:15px; }
+  .warn { font-size:11px; margin-top:12px; }
+  .safe-legend { background:#f3f6f8; padding:10px; border-radius:8px; }
 
   @media (max-width: 900px) {
     .app { grid-template-columns:1fr; }
+    .preview-wrap, .panel { grid-column:1; grid-row:auto; position:static; }
+    .preview-stage { min-height:420px; }
     .preview-stage { min-height:420px; }
   }
 </style>
@@ -62,60 +101,74 @@
 <body>
 <div class="app">
   <section class="panel">
-    <h1>Imposición 7×10 V3 — 3×3</h1>
-    <p class="lead">Carga una imagen o PDF, prepara 9 copias en una hoja de 7×10 pulgadas y corrige el desfase de impresión sin bordes, por zona o pieza individual.</p>
-
-    <div class="campo">
-      <label for="archivo">Archivo original</label>
+    <h1>Preparar imposición</h1>
+    <p class="lead">Configura la pieza y comprueba la hoja antes de generar.</p>
+    <div class="field-group">
+      <label for="archivo">1 · Archivo</label>
       <input id="archivo" type="file" accept="image/png,image/jpeg,image/webp,application/pdf">
-      <p class="hint">Acepta JPG, PNG, WebP y PDF. En PDF se procesa una página por hoja de salida.</p>
+      <div class="file-tile" id="fileTile"><img id="fileThumb" alt="" hidden><div><strong id="fileName">Sin archivo seleccionado</strong><small id="fileMeta">JPG, PNG, WebP o PDF</small></div></div>
     </div>
-
-    <div class="section-title">Color y resolución</div>
-
-    <div class="campo">
-      <label for="modo">Modo de salida</label>
-      <select id="modo">
-        <option value="color" selected>Color</option>
-        <option value="bn">Blanco y negro puro</option>
+    <div class="field-group">
+      <label for="formato">2 · Tamaño de pieza</label>
+      <select id="formato" hidden></select>
+      <div class="format-grid" id="formatGrid" role="group" aria-label="Tamaño de pieza"></div>
+    </div>
+    <div class="field-group">
+      <label>3 · Orientación de pieza</label>
+      <div class="segmented" id="orientationGroup" role="group" aria-label="Orientación de pieza">
+        <button type="button" data-orientation="auto" aria-pressed="true">Automática</button>
+        <button type="button" data-orientation="vertical" aria-pressed="false">Vertical</button>
+        <button type="button" data-orientation="horizontal" aria-pressed="false">Horizontal</button>
+      </div>
+    </div>
+    <div class="field-group">
+      <label for="dpi">4 · Resolución</label>
+      <select id="dpi" hidden>
+        <option value="100">100 DPI — Rápido / archivo liviano</option>
+        <option value="200" selected>200 DPI — Normal</option>
+        <option value="300">300 DPI — Alta calidad</option>
       </select>
+      <div class="segmented" id="dpiGroup" role="group" aria-label="Resolución">
+        <button type="button" data-dpi="100" aria-pressed="false">100 DPI</button>
+        <button type="button" data-dpi="200" aria-pressed="true">200 DPI</button>
+        <button type="button" data-dpi="300" aria-pressed="false">300 DPI</button>
+      </div>
+    </div>
+    <div class="field-group simple-controls">
+      <div><label for="gap">5 · Separación (mm)</label><input id="gap" type="number" min="0" max="10" step="0.1" value="3.048"></div>
+      <div><label for="margin">6 · Margen (mm)</label><input id="margin" type="number" min="0" max="15" step="0.1" value="0"></div>
+    </div>
+    <div class="summary" aria-live="polite"><strong id="layoutInfo"></strong><span id="sheetInfo"></span><em id="rotationInfo"></em></div>
+    <button id="generar" class="btn btn-primary" disabled>Generar PDF</button>
+    <div class="status" id="status" role="status">Selecciona una imagen o PDF para comenzar.</div>
+    <div class="result-actions">
+      <a id="downloadResult" class="btn btn-secondary" hidden>Descargar PDF</a>
+      <button id="saveTransferencias" class="btn" type="button" hidden>Guardar en Transferencias</button>
     </div>
 
-    <div class="campo" id="umbralBox" style="display:none">
-      <label for="umbral">Umbral B/N</label>
-      <input id="umbral" type="range" min="80" max="245" value="190">
-      <div class="rowline"><span>Más bajo = menos negro</span><strong id="valorUmbral">190</strong></div>
-    </div>
-
-    <div class="campo">
-      <label>Resolución</label>
-      <select id="dpi" disabled>
-        <option value="300" selected>300 DPI — fijo</option>
-      </select>
-      <p class="hint">El raster final se prepara a 300 DPI respecto del tamaño físico de la pieza impresa.</p>
-    </div>
-
-    <div class="section-title">Perfil de impresora y sangrado de prueba</div>
-
-    <div class="campo">
+    <details class="advanced advanced-block">
+      <summary>Calibración y opciones de impresión</summary>
+      <div class="campo"><label for="modo">Modo de salida</label><select id="modo"><option value="color" selected>Color</option><option value="bn">Blanco y negro puro</option></select></div>
+      <div class="campo" id="umbralBox" style="display:none"><label for="umbral">Umbral B/N</label><input id="umbral" type="range" min="80" max="245" value="190"><div class="rowline"><span>Más bajo = menos negro</span><strong id="valorUmbral">190</strong></div></div>
+      <div class="campo">
       <label for="printerProfile">Impresora</label>
       <select id="printerProfile">
         <option value="epson" selected>Epson L805</option>
         <option value="pantum">Pantum BM5100ADW</option>
         <option value="custom">Personalizado / prueba</option>
       </select>
-      <p class="hint">Durante la calibración tú controlas cada borde. En V5 esos valores reducen el área útil: el 3×3 se centra y redistribuye automáticamente dentro del rectángulo interior.</p>
+      <p class="hint">Estos valores reducen el área útil. Las piezas se centran dentro del rectángulo interior.</p>
     </div>
 
     <div class="campo">
-      <label>Sangrado / overscan de la hoja (mm)</label>
+      <label>Margen por lado (mm)</label>
       <div class="grid2">
         <div><label for="bleedTop">Superior</label><input id="bleedTop" type="number" min="0" max="15" step="0.1" value="0"></div>
         <div><label for="bleedBottom">Inferior</label><input id="bleedBottom" type="number" min="0" max="15" step="0.1" value="0"></div>
         <div><label for="bleedLeft">Izquierdo</label><input id="bleedLeft" type="number" min="0" max="15" step="0.1" value="0"></div>
         <div><label for="bleedRight">Derecho</label><input id="bleedRight" type="number" min="0" max="15" step="0.1" value="0"></div>
       </div>
-      <p class="hint">La zona gris de la vista previa representa exactamente estos cuatro valores. Sirve para compararla con tu hoja negra numerada y medir qué borde necesita más o menos compensación.</p>
+      <p class="hint">El control de margen general ajusta los cuatro lados; aquí puedes afinarlos por separado.</p>
     </div>
 
     <div class="section-title">Ajuste para impresión sin bordes</div>
@@ -136,26 +189,18 @@
 
     <div class="campo">
       <label>Movimiento vertical por fila (mm)</label>
-      <div class="compact3">
-        <div><label for="rowTop">Fila superior</label><input id="rowTop" type="number" step="0.1" value="0"></div>
-        <div><label for="rowMid">Fila central</label><input id="rowMid" type="number" step="0.1" value="0"></div>
-        <div><label for="rowBottom">Fila inferior</label><input id="rowBottom" type="number" step="0.1" value="0"></div>
-      </div>
+      <div class="compact3" id="rowControls"></div>
       <p class="axisnote">Positivo = subir esa fila. Negativo = bajarla.</p>
     </div>
 
     <div class="campo">
       <label>Movimiento horizontal por columna (mm)</label>
-      <div class="compact3">
-        <div><label for="colLeft">Izquierda</label><input id="colLeft" type="number" step="0.1" value="0"></div>
-        <div><label for="colMid">Centro</label><input id="colMid" type="number" step="0.1" value="0"></div>
-        <div><label for="colRight">Derecha</label><input id="colRight" type="number" step="0.1" value="0"></div>
-      </div>
+      <div class="compact3" id="colControls"></div>
       <p class="axisnote">Positivo = derecha. Negativo = izquierda.</p>
     </div>
 
     <details class="advanced">
-      <summary>Ajuste fino individual de las 9 piezas</summary>
+      <summary>Ajuste fino individual de las piezas</summary>
       <p class="hint">Estos valores se suman a los ajustes globales, de fila y de columna. Úsalos para esquinas o casos extremos.</p>
       <div class="microgrid" id="pieceGrid"></div>
     </details>
@@ -165,12 +210,6 @@
       <input id="escala" type="range" min="98" max="104" step="0.1" value="100">
       <div class="rowline"><span>98%</span><strong><span id="valorEscala">100.0</span>%</strong><span>104%</span></div>
       <p class="hint">Útil para compensar la expansión automática que algunos drivers aplican en modo borderless.</p>
-    </div>
-
-    <div class="campo">
-      <label for="gap">Separación entre piezas (mm)</label>
-      <input id="gap" type="number" min="0" max="10" step="0.1" value="3.048">
-      <p class="hint">3.048 mm equivale al gap original de 0.12 pulgadas.</p>
     </div>
 
     <div class="campo">
@@ -184,21 +223,20 @@
       <label for="guias" style="margin:0;font-weight:600">Mostrar guías en la vista previa</label>
     </div>
 
-    <button id="generar" class="btn btn-primary" disabled>DESCARGAR PDF 7×10</button>
     <button id="reset" class="btn btn-secondary" type="button">Restablecer ajustes</button>
-
-    <div class="status" id="status">Selecciona una imagen o PDF para comenzar.</div>
     <div class="warn"><strong>CMYK real:</strong> el navegador y PDF-lib trabajan principalmente en RGB. Este archivo genera un PDF RGB de alta calidad. Para CMYK de imprenta con perfil ICC, conviértelo después en Acrobat/Callas/Ghostscript o con el perfil ICC específico de tu laboratorio. Evito etiquetar falsamente un PDF RGB como CMYK.</div>
+    </details>
   </section>
 
   <section class="preview-wrap">
-    <h2>Vista previa de la hoja</h2>
+    <div class="preview-head"><h2>Vista previa de la hoja</h2><span class="sheet-tag">7 × 10 pulgadas</span></div>
     <div class="preview-stage">
       <canvas id="preview" width="700" height="1000" aria-label="Vista previa de hoja 7 por 10 pulgadas"></canvas>
     </div>
-    <div class="legend">
-      <span><i class="dot cut"></i> Caja de cada pieza</span>
-      <span><i class="dot bleed"></i> Sangrado / zona excluida del diseño</span>
+    <div class="legend safe-legend">
+      <span><i class="dot cut"></i> Contorno de pieza</span>
+      <span><i class="dot bleed"></i> Margen excluido</span>
+      <span>Área azul: espacio útil · Espacios claros: separación</span>
     </div>
   </section>
 </div>
@@ -211,12 +249,24 @@ const INCH = 72;
 const MM_TO_PT = 72 / 25.4;
 const HOJA_W = 7 * INCH;
 const HOJA_H = 10 * INCH;
-const COLUMNAS = 3;
-const FILAS = 3;
-const DPI = 300;
+const { FORMATS, calculate } = FolletosLayout;
 
 const $ = id => document.getElementById(id);
 const archivo = $('archivo');
+const formato = $('formato');
+const formatGrid = $('formatGrid');
+const dpi = $('dpi');
+const dpiGroup = $('dpiGroup');
+const orientationGroup = $('orientationGroup');
+const margin = $('margin');
+const layoutInfo = $('layoutInfo');
+const sheetInfo = $('sheetInfo');
+const rotationInfo = $('rotationInfo');
+const fileThumb = $('fileThumb');
+const fileName = $('fileName');
+const fileMeta = $('fileMeta');
+const downloadResult = $('downloadResult');
+const saveTransferencias = $('saveTransferencias');
 const modo = $('modo');
 const umbral = $('umbral');
 const valorUmbral = $('valorUmbral');
@@ -231,12 +281,8 @@ const bleedTop = $('bleedTop');
 const bleedBottom = $('bleedBottom');
 const bleedLeft = $('bleedLeft');
 const bleedRight = $('bleedRight');
-const rowTop = $('rowTop');
-const rowMid = $('rowMid');
-const rowBottom = $('rowBottom');
-const colLeft = $('colLeft');
-const colMid = $('colMid');
-const colRight = $('colRight');
+const rowControls = $('rowControls');
+const colControls = $('colControls');
 const pieceGrid = $('pieceGrid');
 const guias = $('guias');
 const generar = $('generar');
@@ -247,6 +293,9 @@ const pctx = preview.getContext('2d');
 
 let source = null; // {type:'image', image:HTMLImageElement} o {type:'pdf', bytes:ArrayBuffer, pdf:PDFDocumentProxy}
 let previewBitmap = null;
+let orientation = 'auto';
+let downloadUrl = null;
+let generatedPdf = null;
 
 function clamp(n, min, max, fallback=0) {
   n = Number(n);
@@ -254,18 +303,69 @@ function clamp(n, min, max, fallback=0) {
   return Math.min(max, Math.max(min, n));
 }
 
-const pieceLabels = [
-  'Arriba izq.','Arriba centro','Arriba der.',
-  'Centro izq.','Centro','Centro der.',
-  'Abajo izq.','Abajo centro','Abajo der.'
-];
+let controlShape = '';
 
-function buildPieceControls() {
+function selectedFormat() { return FORMATS.find(item => item.id === formato.value); }
+function currentLayout(s) { return calculate({ piece: selectedFormat(), margins: s.sheetBleed, gapPt: s.gapPt, orientation }); }
+
+function syncChoiceButtons() {
+  formatGrid.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.format === formato.value)));
+  dpiGroup.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.dpi === dpi.value)));
+  orientationGroup.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.orientation === orientation)));
+}
+
+function clearDownload() {
+  if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+  downloadUrl = null; downloadResult.hidden = true; downloadResult.removeAttribute('href');
+  generatedPdf = null; saveTransferencias.hidden = true; saveTransferencias.disabled = false;
+  saveTransferencias.textContent = 'Guardar en Transferencias';
+  status.classList.remove('saved-status');
+}
+
+function saveGeneratedPdf() {
+  const result = generatedPdf;
+  if (!result || result.saved || result.saving) return;
+  if (window === window.parent) { status.textContent = 'Abre Folletos dentro de PLIP para guardar en Transferencias.'; return; }
+  result.saving = true;
+  saveTransferencias.disabled = true;
+  saveTransferencias.textContent = 'Guardando…';
+  status.textContent = 'Guardando PDF en Transferencias…';
+  document.dispatchEvent(new CustomEvent('folletos:save', { detail: {
+    blob: result.blob, filename: result.filename,
+    complete: outcome => {
+      if (generatedPdf !== result) return;
+      result.saving = false;
+      if (outcome.ok) {
+        result.saved = true;
+        saveTransferencias.textContent = '✓ Guardado en Transferencias';
+        status.textContent = `✓ Guardado en Transferencias: ${result.filename}`;
+        status.classList.add('saved-status');
+      } else {
+        saveTransferencias.disabled = false;
+        saveTransferencias.textContent = 'Guardar en Transferencias';
+        status.textContent = 'Error al guardar: ' + outcome.error;
+      }
+    }
+  }}));
+}
+
+function syncControls(layout) {
+  const shape = `${layout.rows}x${layout.columns}`;
+  if (shape === controlShape) return;
+  controlShape = shape;
+  rowControls.innerHTML = Array.from({length: layout.rows}, (_, i) => `<div><label for="row${i}">Fila ${i+1}</label><input id="row${i}" type="number" step="0.1" value="0"></div>`).join('');
+  colControls.innerHTML = Array.from({length: layout.columns}, (_, i) => `<div><label for="col${i}">Columna ${i+1}</label><input id="col${i}" type="number" step="0.1" value="0"></div>`).join('');
+  rowControls.querySelectorAll('input').forEach(el => el.addEventListener('input', drawPreview));
+  colControls.querySelectorAll('input').forEach(el => el.addEventListener('input', drawPreview));
+  buildPieceControls(layout.count);
+}
+
+function buildPieceControls(count) {
   pieceGrid.innerHTML = '';
-  pieceLabels.forEach((label, i) => {
+  Array.from({length:count}, (_, i) => i).forEach(i => {
     const card = document.createElement('div');
     card.className = 'microcard';
-    card.innerHTML = `<strong>${label}</strong><div class="xy">
+    card.innerHTML = `<strong>Pieza ${i+1}</strong><div class="xy">
       <div><label for="px${i}">X mm</label><input id="px${i}" data-piece="${i}" data-axis="x" type="number" step="0.1" value="0"></div>
       <div><label for="py${i}">Y mm</label><input id="py${i}" data-piece="${i}" data-axis="y" type="number" step="0.1" value="0"></div>
     </div>`;
@@ -275,7 +375,7 @@ function buildPieceControls() {
 }
 
 function pieceOffsetsPt() {
-  return pieceLabels.map((_, i) => ({
+  return Array.from(pieceGrid.querySelectorAll('.microcard'), (_, i) => ({
     x: clamp($(`px${i}`).value, -25, 25, 0) * MM_TO_PT,
     y: clamp($(`py${i}`).value, -25, 25, 0) * MM_TO_PT
   }));
@@ -284,6 +384,7 @@ function pieceOffsetsPt() {
 function settings() {
   return {
     mode: modo.value,
+    dpi: Number(dpi.value),
     threshold: clamp(umbral.value, 80, 245, 190),
     offsetXpt: clamp(offsetX.value, -25, 25, 0) * MM_TO_PT,
     offsetYpt: clamp(offsetY.value, -25, 25, 0) * MM_TO_PT,
@@ -292,8 +393,8 @@ function settings() {
     bleedPt: clamp(bleed.value, 0, 5, 0) * MM_TO_PT,
     printer: printerProfile.value,
     sheetBleed: { top: clamp(bleedTop.value,0,15,0)*MM_TO_PT, bottom: clamp(bleedBottom.value,0,15,0)*MM_TO_PT, left: clamp(bleedLeft.value,0,15,0)*MM_TO_PT, right: clamp(bleedRight.value,0,15,0)*MM_TO_PT },
-    rowY: [rowTop, rowMid, rowBottom].map(el => clamp(el.value, -25, 25, 0) * MM_TO_PT),
-    colX: [colLeft, colMid, colRight].map(el => clamp(el.value, -25, 25, 0) * MM_TO_PT),
+    rowY: Array.from(rowControls.querySelectorAll('input'), el => clamp(el.value, -25, 25, 0) * MM_TO_PT),
+    colX: Array.from(colControls.querySelectorAll('input'), el => clamp(el.value, -25, 25, 0) * MM_TO_PT),
     pieces: pieceOffsetsPt(),
     guides: guias.checked
   };
@@ -330,9 +431,9 @@ async function fileToImage(file) {
   }
 }
 
-async function renderPdfPage(pdf, pageNo, dpi=DPI) {
+async function renderPdfPage(pdf, pageNo, resolution) {
   const page = await pdf.getPage(pageNo);
-  const viewport = page.getViewport({ scale: dpi / 72 });
+  const viewport = page.getViewport({ scale: resolution / 72 });
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.round(viewport.width));
   canvas.height = Math.max(1, Math.round(viewport.height));
@@ -363,28 +464,30 @@ async function makePreviewBitmap() {
   if (source.type === 'image') {
     previewBitmap = source.image;
   } else {
-    const c = await renderPdfPage(source.pdf, 1, 120);
+    const c = await renderPdfPage(source.pdf, 1, Math.min(settings().dpi, 120));
     previewBitmap = c;
   }
 }
 
 function drawPreview() {
-  const s = settings();
+  clearDownload();
+  let s = settings();
+  const layout = currentLayout(s);
+  syncControls(layout);
+  s = settings();
+  syncChoiceButtons();
+  layoutInfo.textContent = `${layout.count} piezas · ${layout.columns} × ${layout.rows} · ${selectedFormat().label} · ${s.dpi} DPI`;
+  sheetInfo.textContent = `Hoja 7 × 10\" · orientación ${orientation === 'auto' ? 'automática' : orientation}`;
+  rotationInfo.textContent = orientation === 'auto' && layout.rotated && layout.candidates[1].count > layout.candidates[0].count
+    ? 'Rotado automáticamente para aprovechar mejor la hoja' : '';
   const W = preview.width, H = preview.height;
   pctx.clearRect(0,0,W,H);
   pctx.fillStyle = '#fff'; pctx.fillRect(0,0,W,H);
 
   const sx = W / HOJA_W, sy = H / HOJA_H;
   const gapPxX = s.gapPt * sx, gapPxY = s.gapPt * sy;
-  // V5: el sangrado define el AREA SEGURA. La cuadrícula 3x3 se recalcula dentro de ella.
-  const safeXpt = s.sheetBleed.left;
-  const safeTopPt = s.sheetBleed.top;
-  const safeWpt = Math.max(1, HOJA_W - s.sheetBleed.left - s.sheetBleed.right);
-  const safeHpt = Math.max(1, HOJA_H - s.sheetBleed.top - s.sheetBleed.bottom);
-  const cellWpt = Math.max(1, (safeWpt - s.gapPt*(COLUMNAS-1)) / COLUMNAS);
-  const cellHpt = Math.max(1, (safeHpt - s.gapPt*(FILAS-1)) / FILAS);
-  const cellW = cellWpt*sx, cellH = cellHpt*sy;
-  const safeX = safeXpt*sx, safeTop = safeTopPt*sy;
+  const cellW = layout.pieceWidthPt*sx, cellH = layout.pieceHeightPt*sy;
+  const safeX = layout.startXPt*sx, safeTop = layout.startTopPt*sy;
   const ox = s.offsetXpt*sx, oy = -s.offsetYpt*sy;
   const bleedPx = s.bleedPt * ((sx+sy)/2);
 
@@ -400,7 +503,19 @@ function drawPreview() {
   if(r>0) pctx.fillRect(W-r,0,r,H);
   pctx.restore();
 
+  // Área útil visible incluso antes de cargar un archivo.
+  pctx.save();
+  pctx.fillStyle='rgba(49,116,183,.09)';
+  pctx.fillRect(s.sheetBleed.left*sx, s.sheetBleed.top*sy, layout.safeWidthPt*sx, layout.safeHeightPt*sy);
+  pctx.strokeStyle='#337ab7'; pctx.lineWidth=2; pctx.setLineDash([8,5]);
+  pctx.strokeRect(s.sheetBleed.left*sx+1, s.sheetBleed.top*sy+1, layout.safeWidthPt*sx-2, layout.safeHeightPt*sy-2);
+  pctx.restore();
+
   if (!previewBitmap) {
+    pctx.save(); pctx.strokeStyle='#cbd5df'; pctx.lineWidth=1;
+    for (let row=0; row<layout.rows; row++) for (let col=0; col<layout.columns; col++)
+      pctx.strokeRect(safeX+col*(cellW+gapPxX),safeTop+row*(cellH+gapPxY),cellW,cellH);
+    pctx.restore();
     pctx.fillStyle='#777'; pctx.font='20px Arial'; pctx.textAlign='center';
     pctx.fillText('Selecciona un archivo', W/2, H/2);
     return;
@@ -408,14 +523,18 @@ function drawPreview() {
 
   pctx.save();
   pctx.beginPath(); pctx.rect(0,0,W,H); pctx.clip();
-  for (let row=0; row<FILAS; row++) {
-    for (let col=0; col<COLUMNAS; col++) {
-      const idx = row*COLUMNAS + col;
+  for (let row=0; row<layout.rows; row++) {
+    for (let col=0; col<layout.columns; col++) {
+      const idx = row*layout.columns + col;
       const localX = (s.colX[col] + s.pieces[idx].x) * sx;
       const localY = -(s.rowY[row] + s.pieces[idx].y) * sy;
       const x = safeX + col*(cellW + gapPxX) + ox + localX;
       const y = safeTop + row*(cellH + gapPxY) + oy + localY;
-      drawContain(pctx, previewBitmap, x, y, cellW, cellH, s.scale, bleedPx);
+      if (layout.rotated) {
+        pctx.save(); pctx.translate(x + cellW, y); pctx.rotate(Math.PI/2);
+        drawContain(pctx, previewBitmap, 0, 0, cellH, cellW, s.scale, bleedPx);
+        pctx.restore();
+      } else drawContain(pctx, previewBitmap, x, y, cellW, cellH, s.scale, bleedPx);
       if (s.guides) {
         pctx.save();
         pctx.strokeStyle = '#d00'; pctx.setLineDash([6,5]); pctx.lineWidth = 1;
@@ -430,8 +549,11 @@ function drawPreview() {
 async function loadSelected() {
   const file = archivo.files[0];
   if (!file) return;
+  clearDownload();
   generar.disabled = true;
   status.textContent = 'Cargando archivo...';
+  fileName.textContent = file.name;
+  fileMeta.textContent = 'Cargando…';
   try {
     if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
       const bytes = await file.arrayBuffer();
@@ -444,17 +566,25 @@ async function loadSelected() {
       status.textContent = `Imagen cargada: ${img.naturalWidth}×${img.naturalHeight} px.`;
     }
     await makePreviewBitmap();
+    fileMeta.textContent = source.type === 'pdf' ? `${source.pdf.numPages} página(s) · PDF` : `${source.image.naturalWidth} × ${source.image.naturalHeight} px · Imagen`;
+    if (previewBitmap) {
+      const thumb = document.createElement('canvas'); thumb.width=80; thumb.height=80;
+      const ctx = thumb.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,80,80);
+      drawContain(ctx, previewBitmap, 0,0,80,80);
+      fileThumb.src = thumb.toDataURL('image/png'); fileThumb.hidden=false;
+    }
     drawPreview();
     generar.disabled = false;
   } catch (e) {
     console.error(e);
     source = null; previewBitmap = null; drawPreview();
+    fileMeta.textContent = 'Archivo no válido'; fileThumb.hidden=true;
     status.textContent = 'Error: ' + e.message;
   }
 }
 
-async function sourcePageToCanvas(pageNo) {
-  if (source.type === 'pdf') return await renderPdfPage(source.pdf, pageNo, DPI);
+async function sourcePageToCanvas(pageNo, resolution) {
+  if (source.type === 'pdf') return await renderPdfPage(source.pdf, pageNo, resolution);
   const img = source.image;
   const canvas = document.createElement('canvas');
   canvas.width = img.naturalWidth || img.width;
@@ -465,7 +595,7 @@ async function sourcePageToCanvas(pageNo) {
   return canvas;
 }
 
-function prepararA300Dpi(sourceCanvas, cellWpt, cellHpt, scaleExtra, bleedPt) {
+function prepareAtResolution(sourceCanvas, cellWpt, cellHpt, scaleExtra, bleedPt, resolution) {
   const iw = sourceCanvas.width;
   const ih = sourceCanvas.height;
   const base = Math.min(cellWpt/iw, cellHpt/ih);
@@ -476,8 +606,8 @@ function prepararA300Dpi(sourceCanvas, cellWpt, cellHpt, scaleExtra, bleedPt) {
   const finalWpt = baseWpt * finalScale;
   const finalHpt = baseHpt * finalScale;
 
-  const targetW = Math.max(1, Math.round(finalWpt / 72 * DPI));
-  const targetH = Math.max(1, Math.round(finalHpt / 72 * DPI));
+  const targetW = Math.max(1, Math.round(finalWpt / 72 * resolution));
+  const targetH = Math.max(1, Math.round(finalHpt / 72 * resolution));
   const canvas = document.createElement('canvas');
   canvas.width = targetW;
   canvas.height = targetH;
@@ -490,25 +620,34 @@ function prepararA300Dpi(sourceCanvas, cellWpt, cellHpt, scaleExtra, bleedPt) {
   return { canvas, widthPt: finalWpt, heightPt: finalHpt };
 }
 
+function rotateCanvas(sourceCanvas) {
+  const canvas = document.createElement('canvas');
+  canvas.width = sourceCanvas.height; canvas.height = sourceCanvas.width;
+  const ctx = canvas.getContext('2d');
+  ctx.translate(canvas.width, 0); ctx.rotate(Math.PI/2);
+  ctx.drawImage(sourceCanvas, 0, 0);
+  return canvas;
+}
+
 async function generatePdf() {
   if (!source) return;
   generar.disabled = true;
+  generar.textContent = 'Generando PDF…';
+  clearDownload();
   const s = settings();
+  const layout = currentLayout(s);
+  if (!layout.count) { status.textContent = 'El formato no cabe en el área útil de la hoja.'; generar.disabled = false; generar.textContent = 'Generar PDF'; return; }
   try {
     const out = await PDFDocument.create();
     const pages = source.type === 'pdf' ? source.pdf.numPages : 1;
-    // V5: exportación idéntica a la preview: las 9 piezas viven dentro del área segura.
-    const safeX = s.sheetBleed.left;
-    const safeTop = s.sheetBleed.top;
-    const safeW = Math.max(1, HOJA_W - s.sheetBleed.left - s.sheetBleed.right);
-    const safeH = Math.max(1, HOJA_H - s.sheetBleed.top - s.sheetBleed.bottom);
-    const cellW = Math.max(1, (safeW - s.gapPt*(COLUMNAS-1)) / COLUMNAS);
-    const cellH = Math.max(1, (safeH - s.gapPt*(FILAS-1)) / FILAS);
+    const cellW = layout.pieceWidthPt;
+    const cellH = layout.pieceHeightPt;
 
     for (let p=1; p<=pages; p++) {
-      status.textContent = `Procesando ${p} de ${pages} a 300 DPI...`;
-      const rawCanvas = await sourcePageToCanvas(p);
-      const prepared = prepararA300Dpi(rawCanvas, cellW, cellH, s.scale, s.bleedPt);
+      status.textContent = `Procesando ${p} de ${pages} a ${s.dpi} DPI...`;
+      const rawCanvas = await sourcePageToCanvas(p, s.dpi);
+      const orientedCanvas = layout.rotated ? rotateCanvas(rawCanvas) : rawCanvas;
+      const prepared = prepareAtResolution(orientedCanvas, cellW, cellH, s.scale, s.bleedPt, s.dpi);
       const canvas = prepared.canvas;
       if (s.mode === 'bn') convertirNegroPuro(canvas, s.threshold);
 
@@ -517,11 +656,11 @@ async function generatePdf() {
       const img = await out.embedPng(pngBytes);
       const page = out.addPage([HOJA_W, HOJA_H]);
 
-      for (let row=0; row<FILAS; row++) {
-        for (let col=0; col<COLUMNAS; col++) {
-          const idx = row*COLUMNAS + col;
-          const cellX = safeX + col*(cellW+s.gapPt) + s.offsetXpt + s.colX[col] + s.pieces[idx].x;
-          const fromTop = safeTop + row*(cellH+s.gapPt) - s.offsetYpt - s.rowY[row] - s.pieces[idx].y;
+      for (let row=0; row<layout.rows; row++) {
+        for (let col=0; col<layout.columns; col++) {
+          const idx = row*layout.columns + col;
+          const cellX = layout.startXPt + col*(cellW+s.gapPt) + s.offsetXpt + s.colX[col] + s.pieces[idx].x;
+          const fromTop = layout.startTopPt + row*(cellH+s.gapPt) - s.offsetYpt - s.rowY[row] - s.pieces[idx].y;
           const cellY = HOJA_H - fromTop - cellH;
           const w = prepared.widthPt;
           const h = prepared.heightPt;
@@ -536,35 +675,61 @@ async function generatePdf() {
     const bytes = await out.save();
     const blob = new Blob([bytes], { type:'application/pdf' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `7x10_3x3_${s.mode === 'color' ? 'COLOR' : 'BN'}_300DPI.pdf`;
-    a.click();
-    setTimeout(()=>URL.revokeObjectURL(url), 3000);
-    status.textContent = '✓ PDF generado. Imprime a tamaño real / 100% y desactiva cualquier ajuste automático del driver si es posible.';
+    downloadUrl = url;
+    const filename = `folletos_${selectedFormat().id}_${layout.count}piezas${pages > 1 ? `_${pages}hojas` : ''}.pdf`;
+    generatedPdf = { blob, filename, saved:false, saving:false };
+    downloadResult.href = url; downloadResult.download = filename; downloadResult.hidden=false;
+    saveTransferencias.hidden = false;
+    status.textContent = `✓ PDF listo: ${filename}. Elige descargarlo o guardarlo en Transferencias.`;
   } catch (e) {
     console.error(e);
     status.textContent = 'Error: ' + e.message;
   } finally {
-    generar.disabled = false;
+    generar.disabled = !source;
+    generar.textContent = 'Generar PDF';
   }
 }
 
 archivo.addEventListener('change', loadSelected);
+formatGrid.addEventListener('click', event => {
+  const button = event.target.closest('button[data-format]');
+  if (!button) return;
+  formato.value = button.dataset.format; clearDownload(); drawPreview();
+});
+orientationGroup.addEventListener('click', event => {
+  const button = event.target.closest('button[data-orientation]');
+  if (!button) return;
+  orientation = button.dataset.orientation; clearDownload(); drawPreview();
+});
+dpiGroup.addEventListener('click', event => {
+  const button = event.target.closest('button[data-dpi]');
+  if (!button) return;
+  dpi.value = button.dataset.dpi; clearDownload(); drawPreview();
+});
+margin.addEventListener('input', () => {
+  [bleedTop, bleedBottom, bleedLeft, bleedRight].forEach(el => el.value = margin.value);
+  clearDownload(); drawPreview();
+});
+[bleedTop, bleedBottom, bleedLeft, bleedRight].forEach(el => el.addEventListener('input', () => { margin.value = ''; clearDownload(); drawPreview(); }));
 modo.addEventListener('change', () => { $('umbralBox').style.display = modo.value === 'bn' ? 'block' : 'none'; drawPreview(); });
-umbral.addEventListener('input', () => { valorUmbral.textContent = umbral.value; });
+umbral.addEventListener('input', () => { valorUmbral.textContent = umbral.value; drawPreview(); });
 escala.addEventListener('input', () => { valorEscala.textContent = Number(escala.value).toFixed(1); drawPreview(); });
-[offsetX, offsetY, gap, bleed, bleedTop, bleedBottom, bleedLeft, bleedRight, printerProfile, rowTop, rowMid, rowBottom, colLeft, colMid, colRight].forEach(el => el.addEventListener('input', drawPreview));
+[formato, dpi].forEach(el => el.addEventListener('change', drawPreview));
+[offsetX, offsetY, gap, bleed, printerProfile].forEach(el => el.addEventListener('input', () => { clearDownload(); drawPreview(); }));
 guias.addEventListener('change', drawPreview);
 generar.addEventListener('click', generatePdf);
+saveTransferencias.addEventListener('click', saveGeneratedPdf);
 reset.addEventListener('click', () => {
   offsetX.value=0; offsetY.value=0; escala.value=100; gap.value=3.048; bleed.value=0; bleedTop.value=0; bleedBottom.value=0; bleedLeft.value=0; bleedRight.value=0; printerProfile.value='epson'; guias.checked=true; modo.value='color'; umbral.value=190;
-  [rowTop,rowMid,rowBottom,colLeft,colMid,colRight].forEach(el => el.value=0);
+  formato.value='7x10'; dpi.value='200'; orientation='auto'; margin.value='0'; clearDownload();
+  [...rowControls.querySelectorAll('input'), ...colControls.querySelectorAll('input')].forEach(el => el.value=0);
   pieceGrid.querySelectorAll('input').forEach(el => el.value=0);
   valorEscala.textContent='100.0'; valorUmbral.textContent='190'; $('umbralBox').style.display='none'; drawPreview();
 });
 
-buildPieceControls();
+formato.innerHTML = FORMATS.map(item => `<option value="${item.id}">${item.label}</option>`).join('');
+formato.value = '7x10';
+formatGrid.innerHTML = FORMATS.map(item => `<button type="button" data-format="${item.id}" aria-pressed="false">${item.label}</button>`).join('');
 drawPreview();
 </script>
 </body>

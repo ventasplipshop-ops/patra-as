@@ -5,7 +5,7 @@ import TransferenciasViewer from './TransferenciasViewer';
 type SharedFile = { id: string; name: string; size: number; type: string; uploadedAt: string };
 type UploadStatus = { name: string; progress: number; state: 'pending' | 'uploading' | 'saving' | 'done' | 'error'; error?: string };
 const endpoint = '/api/transferencias';
-const accept = '.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,.avif,.mp4,.mov,.m4v,.avi,.mkv,.webm,.mpg,.mpeg,.3gp,.mts,.m2ts';
+const accept = '.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,.avif,.mp4,.mov,.m4v,.avi,.mkv,.webm,.mpg,.mpeg,.3gp,.mts,.m2ts,.pdf';
 const button = 'inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed';
 const labels = { pending: 'En espera', uploading: 'Subiendo', saving: 'Guardando en el servidor', done: 'Subido', error: 'Error' };
 
@@ -122,12 +122,12 @@ export default function TransferenciasView() {
     <section className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><h1 className="text-xl font-semibold">Transferencias</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Bandeja compartida de fotos y videos del negocio.</p></div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Bandeja compartida de fotos, videos y PDF del negocio.</p></div>
         <div className="flex flex-wrap gap-2">
           <button className={button} disabled={loading} onClick={() => void refresh()}><RefreshCw size={16} />Actualizar</button>
           {files.length > 0 && <a className={button} href={`${endpoint}/download-all`} download="transferencias.zip"><Download size={16} />Descargar todos</a>}
-          <button className={button} disabled={uploading} onClick={() => input.current?.click()}><Upload size={16} />Subir fotos y videos</button>
-          <input ref={input} type="file" multiple accept={accept} className="hidden" aria-label="Seleccionar fotos y videos" onChange={event => void uploadFiles(event.target.files)} />
+          <button className={button} disabled={uploading} onClick={() => input.current?.click()}><Upload size={16} />Subir archivos</button>
+          <input ref={input} type="file" multiple accept={accept} className="hidden" aria-label="Seleccionar archivos" onChange={event => void uploadFiles(event.target.files)} />
         </div>
       </div>
       {error && <p role="alert" className="rounded-xl bg-red-50 text-red-700 p-3 dark:bg-red-950 dark:text-red-200">{error}</p>}
@@ -147,7 +147,7 @@ export default function TransferenciasView() {
           <tbody>{files.map(file => <tr key={file.id} className="border-t border-gray-200 dark:border-gray-700">
             <td className="p-3"><FilePreview file={file} onOpen={() => setViewing(file)} /></td>
             <td className="p-3 break-all">{file.name}</td>
-            <td className="p-3 whitespace-nowrap">{file.type.startsWith('video/') ? 'Video' : 'Foto'} · {sizeLabel(file.size)}</td>
+            <td className="p-3 whitespace-nowrap">{file.type === 'application/pdf' ? 'PDF' : file.type.startsWith('video/') ? 'Video' : 'Foto'} · {sizeLabel(file.size)}</td>
             <td className="p-3 whitespace-nowrap">{new Date(file.uploadedAt).toLocaleString('es-AR')}</td>
             <td className="p-3"><div className="flex gap-2">
               <a href={`${endpoint}/${file.id}/download`} download={file.name} className={button} aria-label={`Descargar ${file.name}`}><Download size={16} />Descargar</a>

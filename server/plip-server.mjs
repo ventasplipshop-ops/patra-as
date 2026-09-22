@@ -19,6 +19,7 @@ const mediaTypes = {
   '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.m4v': 'video/x-m4v', '.avi': 'video/x-msvideo',
   '.mkv': 'video/x-matroska', '.webm': 'video/webm', '.mpg': 'video/mpeg', '.mpeg': 'video/mpeg',
   '.3gp': 'video/3gpp', '.mts': 'video/mp2t', '.m2ts': 'video/mp2t',
+  '.pdf': 'application/pdf',
 };
 const staticTypes = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json',
@@ -128,7 +129,7 @@ export async function createPlipServer({
             stream.on('error', () => {});
             stream.resume();
             // Defer destruction until Busboy has finished dispatching this part.
-            queueMicrotask(() => fail(httpError(400, 'Foto/video no admitido o nombre de archivo inválido.')));
+            queueMicrotask(() => fail(httpError(400, 'Archivo no admitido o nombre de archivo inválido.')));
             return;
           }
           stream.once('limit', () => queueMicrotask(() => fail(httpError(413, 'El archivo supera el tamaño permitido.'))));
@@ -179,8 +180,8 @@ export async function createPlipServer({
       const preview = pathname.match(/^\/api\/transferencias\/([^/]+)\/view$/);
       if (preview && (method === 'GET' || method === 'HEAD')) {
         const info = await fileInfo(preview[1]);
-        // Only the raster image/video types already admitted for uploads, never HTML/SVG.
-        if (!Object.values(mediaTypes).includes(info.type)) throw httpError(415, 'Este archivo no admite visualización.');
+        // PDF is stored and downloadable, but never rendered inline by this route.
+        if (info.type === 'application/pdf' || !Object.values(mediaTypes).includes(info.type)) throw httpError(415, 'Este archivo no admite visualización.');
         const headers = { 'Content-Type': info.type, 'Content-Disposition': attachment(info.name, 'inline'),
           'Cache-Control': 'no-store', 'Accept-Ranges': 'bytes',
           'Content-Security-Policy': "default-src 'none'; sandbox" };

@@ -201,3 +201,18 @@ test('modo API sin dist conserva las cinco operaciones y persiste al recrear el 
   assert.equal((await fetch(`${base}/api/transferencias/${item.id}`, { method: 'DELETE' })).status, 204);
   assert.equal((await list()).length, 2);
 });
+
+test('PDF de Folletos se conserva como documento descargable sin vista inline', async () => {
+  const pdf = Buffer.from('%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF');
+  const name = 'folletos_9x5_20piezas.pdf';
+  const response = await upload(name, pdf, 'application/pdf');
+  assert.equal(response.status, 201);
+  const item = await response.json();
+  assert.equal(item.name, name);
+  assert.equal(item.type, 'application/pdf');
+  assert.ok((await list()).some(file => file.id === item.id && file.type === 'application/pdf'));
+  const downloaded = await fetch(`${base}/api/transferencias/${item.id}/download`);
+  assert.equal(downloaded.headers.get('content-type'), 'application/pdf');
+  assert.deepEqual(Buffer.from(await downloaded.arrayBuffer()), pdf);
+  assert.equal((await fetch(`${base}/api/transferencias/${item.id}/view`)).status, 415);
+});
