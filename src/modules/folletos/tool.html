@@ -108,38 +108,18 @@
       <input id="archivo" type="file" accept="image/png,image/jpeg,image/webp,application/pdf">
       <div class="file-tile" id="fileTile"><img id="fileThumb" alt="" hidden><div><strong id="fileName">Sin archivo seleccionado</strong><small id="fileMeta">JPG, PNG, WebP o PDF</small></div></div>
     </div>
+    <div class="field-group"><label for="formato">2 · Producto</label><select id="formato"></select></div>
+    <div class="field-group"><label for="sheet">3 · Hoja</label><select id="sheet"></select></div>
     <div class="field-group">
-      <label for="formato">2 · Tamaño de pieza</label>
-      <select id="formato" hidden></select>
-      <div class="format-grid" id="formatGrid" role="group" aria-label="Tamaño de pieza"></div>
-    </div>
-    <div class="field-group">
-      <label>3 · Orientación de pieza</label>
-      <div class="segmented" id="orientationGroup" role="group" aria-label="Orientación de pieza">
-        <button type="button" data-orientation="auto" aria-pressed="true">Automática</button>
-        <button type="button" data-orientation="vertical" aria-pressed="false">Vertical</button>
-        <button type="button" data-orientation="horizontal" aria-pressed="false">Horizontal</button>
-      </div>
-    </div>
-    <div class="field-group">
-      <label for="dpi">4 · Resolución</label>
-      <select id="dpi" hidden>
+      <label for="dpi">4 · Calidad</label>
+      <select id="dpi">
         <option value="100">100 DPI — Rápido / archivo liviano</option>
         <option value="200" selected>200 DPI — Normal</option>
         <option value="300">300 DPI — Alta calidad</option>
       </select>
-      <div class="segmented" id="dpiGroup" role="group" aria-label="Resolución">
-        <button type="button" data-dpi="100" aria-pressed="false">100 DPI</button>
-        <button type="button" data-dpi="200" aria-pressed="true">200 DPI</button>
-        <button type="button" data-dpi="300" aria-pressed="false">300 DPI</button>
-      </div>
-    </div>
-    <div class="field-group simple-controls">
-      <div><label for="gap">5 · Separación (mm)</label><input id="gap" type="number" min="0" max="10" step="0.1" value="3.048"></div>
-      <div><label for="margin">6 · Margen (mm)</label><input id="margin" type="number" min="0" max="15" step="0.1" value="0"></div>
     </div>
     <div class="summary" aria-live="polite"><strong id="layoutInfo"></strong><span id="sheetInfo"></span><em id="rotationInfo"></em></div>
-    <button id="generar" class="btn btn-primary" disabled>Generar PDF</button>
+    <button id="generar" class="btn btn-primary" disabled>GENERAR PARA IMPRIMIR</button>
     <div class="status" id="status" role="status">Selecciona una imagen o PDF para comenzar.</div>
     <div class="result-actions">
       <a id="downloadResult" class="btn btn-secondary" hidden>Descargar PDF</a>
@@ -148,6 +128,7 @@
 
     <details class="advanced advanced-block">
       <summary>Calibración y opciones de impresión</summary>
+      <div class="campo grid2"><div><label for="gap">Separación (mm)</label><input id="gap" type="number" min="0" max="10" step="0.1" value="3.048"></div><div><label for="margin">Margen general (mm)</label><input id="margin" type="number" min="0" max="15" step="0.1" value="0"></div></div>
       <div class="campo"><label for="modo">Modo de salida</label><select id="modo"><option value="color" selected>Color</option><option value="bn">Blanco y negro puro</option></select></div>
       <div class="campo" id="umbralBox" style="display:none"><label for="umbral">Umbral B/N</label><input id="umbral" type="range" min="80" max="245" value="190"><div class="rowline"><span>Más bajo = menos negro</span><strong id="valorUmbral">190</strong></div></div>
       <div class="campo">
@@ -245,19 +226,14 @@
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 const { PDFDocument } = PDFLib;
 
-const INCH = 72;
 const MM_TO_PT = 72 / 25.4;
-const HOJA_W = 7 * INCH;
-const HOJA_H = 10 * INCH;
-const { FORMATS, calculate } = FolletosLayout;
+const { PRODUCTS, SHEETS, calculate } = FolletosLayout;
 
 const $ = id => document.getElementById(id);
 const archivo = $('archivo');
 const formato = $('formato');
-const formatGrid = $('formatGrid');
+const sheet = $('sheet');
 const dpi = $('dpi');
-const dpiGroup = $('dpiGroup');
-const orientationGroup = $('orientationGroup');
 const margin = $('margin');
 const layoutInfo = $('layoutInfo');
 const sheetInfo = $('sheetInfo');
@@ -293,7 +269,6 @@ const pctx = preview.getContext('2d');
 
 let source = null; // {type:'image', image:HTMLImageElement} o {type:'pdf', bytes:ArrayBuffer, pdf:PDFDocumentProxy}
 let previewBitmap = null;
-let orientation = 'auto';
 let downloadUrl = null;
 let generatedPdf = null;
 
@@ -305,14 +280,9 @@ function clamp(n, min, max, fallback=0) {
 
 let controlShape = '';
 
-function selectedFormat() { return FORMATS.find(item => item.id === formato.value); }
-function currentLayout(s) { return calculate({ piece: selectedFormat(), margins: s.sheetBleed, gapPt: s.gapPt, orientation }); }
-
-function syncChoiceButtons() {
-  formatGrid.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.format === formato.value)));
-  dpiGroup.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.dpi === dpi.value)));
-  orientationGroup.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.orientation === orientation)));
-}
+function selectedFormat() { return PRODUCTS.find(item => item.id === formato.value); }
+function selectedSheet() { return SHEETS.find(item => item.id === sheet.value); }
+function currentLayout(s) { return calculate({ product: selectedFormat(), sheet: selectedSheet(), margins: s.sheetBleed, gapPt: s.gapPt }); }
 
 function clearDownload() {
   if (downloadUrl) URL.revokeObjectURL(downloadUrl);
@@ -475,16 +445,18 @@ function drawPreview() {
   const layout = currentLayout(s);
   syncControls(layout);
   s = settings();
-  syncChoiceButtons();
-  layoutInfo.textContent = `${layout.count} piezas · ${layout.columns} × ${layout.rows} · ${selectedFormat().label} · ${s.dpi} DPI`;
-  sheetInfo.textContent = `Hoja 7 × 10\" · orientación ${orientation === 'auto' ? 'automática' : orientation}`;
-  rotationInfo.textContent = orientation === 'auto' && layout.rotated && layout.candidates[1].count > layout.candidates[0].count
-    ? 'Rotado automáticamente para aprovechar mejor la hoja' : '';
+  const mm = 25.4 / 72;
+  layoutInfo.textContent = `${layout.count} piezas por hoja · Distribución ${layout.columns} × ${layout.rows}`;
+  sheetInfo.textContent = `${selectedFormat().label} · resultado ${(layout.resultWidthPt*mm).toFixed(2)} × ${(layout.resultHeightPt*mm).toFixed(2)} mm · ${s.dpi} DPI`;
+  rotationInfo.textContent = `Hoja ${selectedSheet().label}${layout.sheetRotated ? ' rotada' : ''}${layout.rotated ? ' · piezas rotadas' : ''}`;
+  const targetWidth = layout.sheetRotated ? 1000 : 700;
+  const targetHeight = layout.sheetRotated ? 700 : 1000;
+  if (preview.width !== targetWidth || preview.height !== targetHeight) { preview.width = targetWidth; preview.height = targetHeight; }
   const W = preview.width, H = preview.height;
   pctx.clearRect(0,0,W,H);
   pctx.fillStyle = '#fff'; pctx.fillRect(0,0,W,H);
 
-  const sx = W / HOJA_W, sy = H / HOJA_H;
+  const sx = W / layout.pageWidthPt, sy = H / layout.pageHeightPt;
   const gapPxX = s.gapPt * sx, gapPxY = s.gapPt * sy;
   const cellW = layout.pieceWidthPt*sx, cellH = layout.pieceHeightPt*sy;
   const safeX = layout.startXPt*sx, safeTop = layout.startTopPt*sy;
@@ -636,7 +608,7 @@ async function generatePdf() {
   clearDownload();
   const s = settings();
   const layout = currentLayout(s);
-  if (!layout.count) { status.textContent = 'El formato no cabe en el área útil de la hoja.'; generar.disabled = false; generar.textContent = 'Generar PDF'; return; }
+  if (!layout.count) { status.textContent = 'El producto no cabe en el área útil de la hoja.'; generar.disabled = false; generar.textContent = 'GENERAR PARA IMPRIMIR'; return; }
   try {
     const out = await PDFDocument.create();
     const pages = source.type === 'pdf' ? source.pdf.numPages : 1;
@@ -654,14 +626,14 @@ async function generatePdf() {
       const blob = await canvasBlob(canvas, 'image/png');
       const pngBytes = await blob.arrayBuffer();
       const img = await out.embedPng(pngBytes);
-      const page = out.addPage([HOJA_W, HOJA_H]);
+      const page = out.addPage([layout.pageWidthPt, layout.pageHeightPt]);
 
       for (let row=0; row<layout.rows; row++) {
         for (let col=0; col<layout.columns; col++) {
           const idx = row*layout.columns + col;
           const cellX = layout.startXPt + col*(cellW+s.gapPt) + s.offsetXpt + s.colX[col] + s.pieces[idx].x;
           const fromTop = layout.startTopPt + row*(cellH+s.gapPt) - s.offsetYpt - s.rowY[row] - s.pieces[idx].y;
-          const cellY = HOJA_H - fromTop - cellH;
+          const cellY = layout.pageHeightPt - fromTop - cellH;
           const w = prepared.widthPt;
           const h = prepared.heightPt;
           const x = cellX + (cellW-w)/2;
@@ -686,26 +658,14 @@ async function generatePdf() {
     status.textContent = 'Error: ' + e.message;
   } finally {
     generar.disabled = !source;
-    generar.textContent = 'Generar PDF';
+    generar.textContent = 'GENERAR PARA IMPRIMIR';
   }
 }
 
 archivo.addEventListener('change', loadSelected);
-formatGrid.addEventListener('click', event => {
-  const button = event.target.closest('button[data-format]');
-  if (!button) return;
-  formato.value = button.dataset.format; clearDownload(); drawPreview();
-});
-orientationGroup.addEventListener('click', event => {
-  const button = event.target.closest('button[data-orientation]');
-  if (!button) return;
-  orientation = button.dataset.orientation; clearDownload(); drawPreview();
-});
-dpiGroup.addEventListener('click', event => {
-  const button = event.target.closest('button[data-dpi]');
-  if (!button) return;
-  dpi.value = button.dataset.dpi; clearDownload(); drawPreview();
-});
+formato.addEventListener('change', () => { clearDownload(); drawPreview(); });
+sheet.addEventListener('change', () => { clearDownload(); drawPreview(); });
+dpi.addEventListener('change', () => { clearDownload(); drawPreview(); });
 margin.addEventListener('input', () => {
   [bleedTop, bleedBottom, bleedLeft, bleedRight].forEach(el => el.value = margin.value);
   clearDownload(); drawPreview();
@@ -721,15 +681,16 @@ generar.addEventListener('click', generatePdf);
 saveTransferencias.addEventListener('click', saveGeneratedPdf);
 reset.addEventListener('click', () => {
   offsetX.value=0; offsetY.value=0; escala.value=100; gap.value=3.048; bleed.value=0; bleedTop.value=0; bleedBottom.value=0; bleedLeft.value=0; bleedRight.value=0; printerProfile.value='epson'; guias.checked=true; modo.value='color'; umbral.value=190;
-  formato.value='7x10'; dpi.value='200'; orientation='auto'; margin.value='0'; clearDownload();
+  formato.value='7x10'; sheet.value='7x10in'; dpi.value='200'; margin.value='0'; clearDownload();
   [...rowControls.querySelectorAll('input'), ...colControls.querySelectorAll('input')].forEach(el => el.value=0);
   pieceGrid.querySelectorAll('input').forEach(el => el.value=0);
   valorEscala.textContent='100.0'; valorUmbral.textContent='190'; $('umbralBox').style.display='none'; drawPreview();
 });
 
-formato.innerHTML = FORMATS.map(item => `<option value="${item.id}">${item.label}</option>`).join('');
+formato.innerHTML = PRODUCTS.map(item => `<option value="${item.id}">${item.label} cm</option>`).join('');
 formato.value = '7x10';
-formatGrid.innerHTML = FORMATS.map(item => `<button type="button" data-format="${item.id}" aria-pressed="false">${item.label}</button>`).join('');
+sheet.innerHTML = SHEETS.map(item => `<option value="${item.id}">${item.label}</option>`).join('');
+sheet.value = '7x10in';
 drawPreview();
 </script>
 </body>
