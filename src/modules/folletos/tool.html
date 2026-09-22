@@ -7,96 +7,94 @@
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
-  * { box-sizing: border-box; }
-  body { margin: 0; font-family: Arial, sans-serif; background: #ececec; color: #222; }
-  .app { width: min(1180px, calc(100% - 24px)); margin: 24px auto; display:grid; grid-template-columns: 380px 1fr; gap: 20px; align-items:start; }
-  .panel, .preview-wrap { background:#fff; border-radius:14px; box-shadow:0 5px 24px #0002; }
-  .panel { padding:22px; }
-  .preview-wrap { padding:18px; }
-  h1 { margin:0 0 8px; font-size:24px; }
-  h2 { margin:0 0 12px; font-size:18px; }
-  .lead { color:#555; font-size:14px; line-height:1.45; margin:0 0 18px; }
-  .campo { margin:16px 0; }
-  label { display:block; font-weight:700; margin-bottom:7px; }
+  * { box-sizing:border-box; }
+  html, body { min-height:100%; }
+  body { margin:0; font-family:Arial, sans-serif; background:#e9edf1; color:#20242a; }
+  .app { width:min(1600px,calc(100% - 24px)); min-height:calc(100vh - 24px); margin:12px auto; display:grid; grid-template-columns:390px minmax(0,1fr); gap:14px; align-items:start; }
+  .panel, .preview-wrap { background:#fff; border:1px solid #dfe3e8; border-radius:12px; box-shadow:0 3px 16px #17233516; }
+  .panel { position:sticky; top:12px; max-height:calc(100vh - 24px); overflow:auto; padding:16px; scrollbar-width:thin; }
+  .preview-wrap { min-width:0; padding:14px; }
+  h1 { margin:0; font-size:20px; line-height:1.15; }
+  h2 { margin:0; font-size:17px; }
+  .lead { color:#626975; font-size:12.5px; line-height:1.35; margin:4px 0 12px; }
+  label { display:block; margin-bottom:5px; font-size:12px; font-weight:700; }
   input[type=file], select, input[type=number], input[type=range] { width:100%; }
-  input[type=number], select { padding:10px 11px; border:1px solid #ccc; border-radius:8px; font-size:15px; background:#fff; }
+  input[type=number], select { min-height:39px; padding:8px 9px; border:1px solid #cbd1d8; border-radius:7px; background:#fff; color:#20242a; font-size:14px; }
   input[type=range] { accent-color:#111; }
-  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .rowline { display:flex; justify-content:space-between; gap:10px; font-size:13px; color:#555; margin-top:5px; }
-  .hint { font-size:12.5px; color:#666; line-height:1.4; margin:6px 0 0; }
-  .switchline { display:flex; gap:12px; align-items:center; }
+  .field-group { margin-top:10px; }
+  .field-group.file-field { display:grid; grid-template-columns:110px minmax(0,1fr); gap:8px; align-items:end; }
+  .file-field > label { grid-column:1/-1; margin:0; }
+  .file-field input[type=file] { min-width:0; font-size:11px; }
+  .file-field #transferencias-archivo { min-height:32px; padding:6px 8px; }
+  .file-tile { display:flex; min-width:0; min-height:48px; gap:8px; align-items:center; padding:6px 8px; border:1px solid #d7dce2; border-radius:8px; }
+  .file-field .file-tile { grid-column:1/-1; }
+  .file-tile img { width:34px; height:34px; flex:0 0 auto; object-fit:cover; border-radius:5px; background:#eee; }
+  .file-tile div { min-width:0; }
+  .file-tile strong { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+  .file-tile small { display:block; overflow:hidden; color:#656b74; font-size:10.5px; text-overflow:ellipsis; white-space:nowrap; }
+  .core-controls { display:grid; grid-template-columns:.85fr 1fr 1.2fr; gap:7px; margin-top:11px; }
+  .core-controls .field-group { margin:0; min-width:0; }
+  .core-controls select { padding-inline:7px; font-size:13px; }
+  .custom-sheet { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; padding:9px; background:#f4f6f8; border-radius:8px; }
+  .custom-sheet[hidden] { display:none; }
+  .custom-sheet label { font-size:11px; }
+  .production-actions { position:sticky; bottom:-16px; z-index:2; margin:12px -4px 0; padding:0 4px 4px; background:linear-gradient(#fff0,#fff 12px); }
+  .summary { display:grid; grid-template-columns:1fr auto; grid-template-areas:'count grid' 'detail detail' 'rotation rotation'; align-items:center; padding:12px; background:#eef2f5; border-radius:9px; }
+  .summary strong { grid-area:count; font-size:24px; line-height:1; letter-spacing:.02em; }
+  .summary .grid-result { grid-area:grid; font-size:20px; line-height:1; font-weight:800; color:#343a43; }
+  .summary span { grid-area:detail; color:#59616c; font-size:12px; margin-top:7px; }
+  .summary em { grid-area:rotation; color:#17623a; font-size:11px; font-style:normal; font-weight:700; margin-top:5px; }
+  .btn { width:100%; min-height:40px; padding:10px 12px; border:0; border-radius:8px; font-size:13px; font-weight:800; cursor:pointer; }
+  .btn-primary { min-height:48px; margin-top:8px; background:#111; color:#fff; font-size:15px; }
+  .btn-secondary { background:#e8eaed; color:#111; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  .status { min-height:0; margin-top:7px; padding:7px 9px; border-radius:7px; background:#f4f5f6; color:#555d67; font-size:11.5px; line-height:1.3; }
+  .status.ready { color:#17623a; font-weight:800; }
+  .result-actions { display:grid; grid-template-columns:1.25fr .75fr; gap:7px; margin-top:7px; }
+  .result-actions [hidden] { display:none !important; }
+  #downloadResult:not([hidden]) { display:flex; align-items:center; justify-content:center; text-align:center; text-decoration:none; }
+  .result-actions #saveTransferencias { background:#dfeaf4; color:#153b5c; }
+  .saved-status { color:#17623a; font-weight:700; }
+  details.advanced { margin:10px 0 0; border:1px solid #d8dde3; border-radius:8px; padding:0 10px 10px; background:#fafbfc; }
+  details.advanced > summary { margin:0 -10px; padding:10px; cursor:pointer; font-size:12px; font-weight:700; }
+  .campo { margin:12px 0; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .rowline { display:flex; justify-content:space-between; gap:8px; margin-top:4px; color:#626975; font-size:11px; }
+  .hint, .axisnote { color:#68707a; font-size:11px; line-height:1.35; margin:5px 0 0; }
+  .switchline { display:flex; gap:10px; align-items:center; }
   .switchline input { width:auto; }
-  .btn { width:100%; padding:14px 16px; border:0; border-radius:9px; font-size:15px; font-weight:700; cursor:pointer; }
-  .btn-primary { background:#111; color:#fff; }
-  .btn-secondary { background:#e9e9e9; color:#111; margin-top:9px; }
-  .btn:disabled { opacity:.5; cursor:not-allowed; }
-  .status { margin-top:14px; padding:11px 12px; background:#f2f2f2; border-radius:8px; font-size:13px; line-height:1.45; }
-  .warn { margin-top:14px; padding:11px 12px; background:#fff4d9; border-left:4px solid #c58c00; font-size:12.5px; line-height:1.4; }
-  .preview-stage { display:flex; justify-content:center; align-items:flex-start; overflow:auto; padding:10px; background:#f4f4f4; border-radius:10px; min-height:620px; }
-  canvas { max-width:100%; height:auto; background:white; box-shadow:0 2px 16px #0003; }
-  .legend { display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; font-size:12px; color:#555; }
-  .legend span { display:inline-flex; align-items:center; gap:6px; }
-  .dot { width:12px; height:12px; border:1px solid #555; background:#fff; }
+  .section-title { margin-top:14px; padding-top:11px; border-top:1px solid #e5e5e5; font-size:12px; font-weight:700; }
+  .microgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:8px; }
+  .microcard { border:1px solid #ddd; border-radius:7px; padding:7px; background:#fff; }
+  .microcard strong { display:block; font-size:11px; margin-bottom:5px; }
+  .microcard .xy { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+  .microcard label { font-size:10px; margin-bottom:2px; font-weight:600; }
+  .microcard input, .compact3 input { padding:6px; font-size:12px; }
+  .compact3 { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .compact3 label { font-size:11px; }
+  .warn { margin-top:10px; padding:9px; background:#fff4d9; border-left:3px solid #c58c00; font-size:10.5px; line-height:1.35; }
+  .preview-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; }
+  .sheet-tag { padding:6px 9px; border-radius:7px; background:#eef2f5; font-size:11px; font-weight:700; }
+  .preview-stage { display:flex; height:calc(100vh - 126px); min-height:520px; justify-content:center; align-items:center; overflow:hidden; padding:18px; background:#e2e7ec; border-radius:9px; }
+  .preview-stage canvas { display:block; width:auto; height:auto; max-width:100%; max-height:100%; background:#fff; box-shadow:0 8px 30px #17233535; }
+  .legend { display:flex; flex-wrap:wrap; gap:10px; margin-top:9px; color:#59616c; font-size:10.5px; }
+  .legend span { display:inline-flex; align-items:center; gap:5px; }
+  .dot { width:10px; height:10px; border:1px solid #555; background:#fff; }
   .dot.cut { border:1px dashed #d00; }
   .dot.bleed { background:#ddd; border-color:#999; }
-  .section-title { margin-top:20px; padding-top:14px; border-top:1px solid #e5e5e5; font-weight:700; font-size:14px; }
-  details.advanced { margin:14px 0; border:1px solid #ddd; border-radius:10px; padding:10px 12px; background:#fafafa; }
-  details.advanced summary { cursor:pointer; font-weight:700; }
-  .microgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px; }
-  .microcard { border:1px solid #ddd; border-radius:8px; padding:8px; background:#fff; }
-  .microcard strong { display:block; font-size:12px; margin-bottom:6px; }
-  .microcard .xy { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-  .microcard label { font-size:11px; margin-bottom:3px; font-weight:600; }
-  .microcard input { padding:7px 6px; font-size:13px; }
-  .compact3 { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-  .compact3 label { font-size:12px; }
-  .compact3 input { padding:8px; }
-  .axisnote { font-size:11.5px; color:#666; margin-top:6px; }
-  .app { width:min(1440px,calc(100% - 28px)); grid-template-columns:minmax(0,1fr) 360px; gap:16px; margin:14px auto; }
-  .preview-wrap { grid-column:1; grid-row:1; position:sticky; top:14px; }
-  .panel { grid-column:2; grid-row:1; padding:20px; }
-  .panel h1 { font-size:22px; }
-  .preview-stage { min-height:690px; padding:20px; background:#e6e9ed; align-items:center; }
-  .preview-stage canvas { width:min(100%,490px); max-height:72vh; object-fit:contain; box-shadow:0 8px 30px #17233535; }
-  .preview-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
-  .preview-head h2 { margin:0; }
-  .sheet-tag { font-size:12px; font-weight:700; background:#eef1f5; padding:8px 10px; border-radius:8px; }
-  .field-group { border-top:1px solid #e5e5e5; padding-top:14px; margin-top:14px; }
-  .field-group > label, .field-group > legend { font-size:13px; font-weight:700; margin-bottom:9px; }
-  .file-tile { display:flex; gap:10px; align-items:center; padding:10px; border:1px solid #d7dce2; border-radius:10px; min-height:68px; }
-  .file-tile img { width:48px; height:48px; object-fit:cover; border-radius:6px; background:#eee; }
-  .file-tile strong { display:block; max-width:235px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }
-  .file-tile small { color:#656b74; }
-  .format-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
-  .format-grid button, .segmented button { border:1px solid #ccd1d8; border-radius:8px; background:#fff; min-height:43px; font-size:13px; font-weight:700; cursor:pointer; }
-  .format-grid button[aria-pressed=true], .segmented button[aria-pressed=true] { background:#111; border-color:#111; color:#fff; }
-  .segmented { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
-  .simple-controls { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .custom-sheet { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
-  .custom-sheet[hidden] { display:none; }
-  .simple-controls input { min-height:43px; }
-  .summary { padding:15px; margin-top:16px; background:#eef1f5; border-radius:10px; }
-  .summary strong { display:block; font-size:18px; line-height:1.3; }
-  .summary span { display:block; color:#4b5563; font-size:13px; margin-top:5px; }
-  .summary em { display:block; color:#175f39; font-size:12px; font-style:normal; font-weight:700; margin-top:8px; }
-  .btn-primary { min-height:52px; margin-top:14px; font-size:17px; }
-  #downloadResult:not([hidden]) { display:block; text-align:center; text-decoration:none; }
-  .result-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
-  .result-actions .btn { margin:0; min-height:46px; font-size:14px; }
-  .result-actions #saveTransferencias { background:#e4edf6; color:#153b5c; }
-  .result-actions [hidden] { display:none !important; }
-  .saved-status { color:#17623a; font-weight:700; }
-  .advanced-block { margin-top:14px; }
-  .advanced-block > summary { padding:12px; }
-  .advanced-block .section-title { margin-top:15px; }
-  .warn { font-size:11px; margin-top:12px; }
-  .safe-legend { background:#f3f6f8; padding:10px; border-radius:8px; }
 
-  @media (max-width: 900px) {
-    .app { grid-template-columns:1fr; }
-    .preview-wrap, .panel { grid-column:1; grid-row:auto; position:static; }
-    .preview-stage { min-height:420px; }
-    .preview-stage { min-height:420px; }
+  @media (max-width:900px) {
+    .app { min-height:auto; grid-template-columns:1fr; }
+    .panel { position:static; max-height:none; overflow:visible; }
+    .production-actions { position:static; }
+    .preview-stage { height:auto; min-height:420px; max-height:70vh; }
+  }
+  @media (max-width:520px) {
+    .app { width:calc(100% - 12px); margin:6px auto; gap:8px; }
+    .panel, .preview-wrap { padding:12px; border-radius:9px; }
+    .core-controls { grid-template-columns:1fr; }
+    .field-group.file-field { grid-template-columns:1fr; }
+    .preview-stage { min-height:360px; padding:10px; }
   }
 </style>
 </head>
@@ -105,32 +103,35 @@
   <section class="panel">
     <h1>Preparar imposición</h1>
     <p class="lead">Configura la pieza y comprueba la hoja antes de generar.</p>
-    <div class="field-group">
-      <label for="archivo">1 · Archivo</label>
+    <div class="field-group file-field">
+      <label for="archivo">Archivo</label>
       <input id="archivo" type="file" accept="image/png,image/jpeg,image/webp,application/pdf">
       <div class="file-tile" id="fileTile"><img id="fileThumb" alt="" hidden><div><strong id="fileName">Sin archivo seleccionado</strong><small id="fileMeta">JPG, PNG, WebP o PDF</small></div></div>
     </div>
-    <div class="field-group"><label for="formato">2 · Producto</label><select id="formato"></select></div>
-    <div class="field-group"><label for="sheet">3 · Hoja</label><select id="sheet"></select>
-      <div class="custom-sheet" id="customSheetFields" hidden>
-        <div><label for="customSheetWidth">Ancho (mm)</label><input id="customSheetWidth" type="number" min="50" max="2000" step="0.1" value="210"></div>
-        <div><label for="customSheetHeight">Alto (mm)</label><input id="customSheetHeight" type="number" min="50" max="2000" step="0.1" value="297"></div>
+    <div class="core-controls">
+      <div class="field-group"><label for="formato">Producto</label><select id="formato"></select></div>
+      <div class="field-group"><label for="sheet">Hoja</label><select id="sheet"></select></div>
+      <div class="field-group">
+        <label for="dpi">Calidad</label>
+        <select id="dpi">
+          <option value="100">100 DPI — Rápido</option>
+          <option value="200" selected>200 DPI — Normal</option>
+          <option value="300">300 DPI — Alta</option>
+        </select>
       </div>
     </div>
-    <div class="field-group">
-      <label for="dpi">4 · Calidad</label>
-      <select id="dpi">
-        <option value="100">100 DPI — Rápido / archivo liviano</option>
-        <option value="200" selected>200 DPI — Normal</option>
-        <option value="300">300 DPI — Alta calidad</option>
-      </select>
+    <div class="custom-sheet" id="customSheetFields" hidden>
+      <div><label for="customSheetWidth">Ancho (mm)</label><input id="customSheetWidth" type="number" min="50" max="2000" step="0.1" value="210"></div>
+      <div><label for="customSheetHeight">Alto (mm)</label><input id="customSheetHeight" type="number" min="50" max="2000" step="0.1" value="297"></div>
     </div>
-    <div class="summary" aria-live="polite"><strong id="layoutInfo"></strong><span id="sheetInfo"></span><em id="rotationInfo"></em></div>
-    <button id="generar" class="btn btn-primary" disabled>GENERAR PARA IMPRIMIR</button>
-    <div class="status" id="status" role="status">Selecciona una imagen o PDF para comenzar.</div>
-    <div class="result-actions">
-      <a id="downloadResult" class="btn btn-secondary" hidden>Descargar PDF</a>
-      <button id="saveTransferencias" class="btn" type="button" hidden>Guardar en Transferencias</button>
+    <div class="production-actions">
+      <div class="summary" aria-live="polite"><strong id="layoutInfo"></strong><b class="grid-result" id="gridInfo"></b><span id="sheetInfo"></span><em id="rotationInfo"></em></div>
+      <button id="generar" class="btn btn-primary" disabled>GENERAR PARA IMPRIMIR</button>
+      <div class="status" id="status" role="status">Selecciona una imagen o PDF para comenzar.</div>
+      <div class="result-actions">
+        <button id="saveTransferencias" class="btn" type="button" hidden>Guardar en Transferencias</button>
+        <a id="downloadResult" class="btn btn-secondary" hidden>Descargar</a>
+      </div>
     </div>
 
     <details class="advanced advanced-block">
@@ -247,6 +248,7 @@ const sheetTag = $('sheetTag');
 const dpi = $('dpi');
 const margin = $('margin');
 const layoutInfo = $('layoutInfo');
+const gridInfo = $('gridInfo');
 const sheetInfo = $('sheetInfo');
 const rotationInfo = $('rotationInfo');
 const fileThumb = $('fileThumb');
@@ -307,11 +309,13 @@ function selectedSheet() {
 function currentLayout(s) { return calculate({ product: selectedFormat(), sheet: selectedSheet(), margins: s.sheetBleed, gapPt: s.gapPt }); }
 
 function clearDownload() {
+  const hadResult = Boolean(generatedPdf);
   if (downloadUrl) URL.revokeObjectURL(downloadUrl);
   downloadUrl = null; downloadResult.hidden = true; downloadResult.removeAttribute('href');
   generatedPdf = null; saveTransferencias.hidden = true; saveTransferencias.disabled = false;
   saveTransferencias.textContent = 'Guardar en Transferencias';
-  status.classList.remove('saved-status');
+  status.classList.remove('saved-status', 'ready');
+  if (hadResult) status.textContent = source ? 'Archivo listo para generar.' : 'Selecciona una imagen o PDF para comenzar.';
 }
 
 function saveGeneratedPdf() {
@@ -468,9 +472,10 @@ function drawPreview() {
   syncControls(layout);
   s = settings();
   const mm = 25.4 / 72;
-  layoutInfo.textContent = `${layout.count} piezas por hoja · Distribución ${layout.columns} × ${layout.rows}`;
-  sheetInfo.textContent = `${selectedFormat().label} · resultado ${(layout.resultWidthPt*mm).toFixed(2)} × ${(layout.resultHeightPt*mm).toFixed(2)} mm · ${s.dpi} DPI`;
-  rotationInfo.textContent = `Hoja ${selectedSheet().label}${layout.sheetRotated ? ' rotada' : ''}${layout.rotated ? ' · piezas rotadas' : ''}`;
+  layoutInfo.textContent = `${layout.count} PIEZAS`;
+  gridInfo.textContent = `${layout.columns} × ${layout.rows}`;
+  sheetInfo.textContent = `${(layout.resultWidthPt*mm).toFixed(2)} × ${(layout.resultHeightPt*mm).toFixed(2)} mm · separación ${(s.gapPt*mm).toFixed(2)} mm`;
+  rotationInfo.textContent = layout.sheetRotated ? 'Hoja rotada automáticamente' : layout.rotated ? 'Piezas rotadas automáticamente' : '';
   sheetTag.textContent = `${selectedSheet().label} · ${selectedSheet().displayWidthMm} × ${selectedSheet().displayHeightMm} mm`;
   const targetWidth = layout.sheetRotated ? 1000 : 700;
   const targetHeight = layout.sheetRotated ? 700 : 1000;
@@ -675,7 +680,8 @@ async function generatePdf() {
     generatedPdf = { blob, filename, saved:false, saving:false };
     downloadResult.href = url; downloadResult.download = filename; downloadResult.hidden=false;
     saveTransferencias.hidden = false;
-    status.textContent = `✓ PDF listo: ${filename}. Elige descargarlo o guardarlo en Transferencias.`;
+    status.classList.add('ready');
+    status.textContent = '✓ PDF listo';
   } catch (e) {
     console.error(e);
     status.textContent = 'Error: ' + e.message;
