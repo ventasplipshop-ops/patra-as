@@ -20,8 +20,10 @@ puerto 8080. Abrir `http://localhost:8080` en el servidor. Las demás cajas abre
 `http://IP-LOCAL-DEL-SERVIDOR:8080` en su navegador. Usar una IP fija o reserva DHCP.
 Las cajas no necesitan Node, Vite, carpetas compartidas de Windows ni unidades mapeadas.
 
-`npm run dev` y `npm run preview` siguen disponibles, pero no incluyen el servicio de
-Transferencias. Para el uso habitual de este módulo usar `npm start`.
+`npm run dev` inicia Vite y una instancia local de Transferencias en el mismo comando;
+las rutas `/api/transferencias` se conectan mediante el proxy de desarrollo. `npm run
+preview` no incluye el servicio de archivos. Para el uso habitual seguir usando `npm
+start`, que sirve la aplicación compilada y Transferencias en un único proceso.
 
 ## Carpeta persistente y configuración
 

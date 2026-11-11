@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { searchMulti } from "../../api/search";
 import type { SearchResource, SearchResult } from "../../api/search";
 
@@ -6,9 +6,10 @@ interface SearchDropdownProps {
   resources: SearchResource[];
   placeholder?: string;
   onSelect?: (row: any, resource: SearchResource) => void;
+  renderResult?: (row: any) => ReactNode;
 }
 
-export default function SearchDropdown({ resources, placeholder, onSelect }: SearchDropdownProps) {
+export default function SearchDropdown({ resources, placeholder, onSelect, renderResult }: SearchDropdownProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -108,7 +109,7 @@ export default function SearchDropdown({ resources, placeholder, onSelect }: Sea
               onClick={() => handleSelect(row, table)}
             >
               <span className="text-gray-800 dark:text-gray-100">
-                {row.nombre || row.sku || JSON.stringify(row)}
+                {renderResult ? renderResult(row) : (row.nombre || row.sku || JSON.stringify(row))}
               </span>
             </li>
           ))}

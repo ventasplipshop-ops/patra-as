@@ -9,8 +9,8 @@
     "test:videolab:browser": "node server/videolab/browser.check.mjs",
     "test:videolab": "node --test server/videolab/*.test.mjs",
     "test:transferencias": "node --test server/transferencias.test.mjs",
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "node server/dev.mjs",
+    "build": "tsc -b && vite build --configLoader runner",
     "lint": "eslint .",
     "preview": "vite preview"
   },

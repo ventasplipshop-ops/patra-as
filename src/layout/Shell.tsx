@@ -1,4 +1,4 @@
-import React, { use, useState } from "react";
+import React, { useState } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
 import SidebarOverlay from "../modules/sidebar/SidebarOverlay";
@@ -6,7 +6,6 @@ import RightToolsDrawer from "../modules/tools/RightToolsDrawer";
 import BottomHistoryDrawer from "../modules/history/BottomHistoryDrawer";
 import CajaView from "../views/CajaView";
 import DepositoView from "../views/DepositoView";
-import type { SaleDraft } from "../api";
 import ConsignasModal from "../components/ConsignasModal";
 import TopProductosModal from "../components/TopProductosModal";
 import RegistrarPedidoMLModal from "../components/RegistrarPedidoMLModal";
@@ -22,9 +21,10 @@ import FotoLabView from "../modules/fotolab/FotoLabView";
 import FolletosView from "../modules/folletos/FolletosView";
 import VideoLabView from "../modules/videolab/VideoLabView";
 import TransferenciasView from "../modules/transferencias/TransferenciasView";
+import CatalogosView from "../modules/catalogos/CatalogosView";
 
 
-type Vista = "caja" | "deposito" | "dashboard" | "inventario" | "leads" | "orders" | "fotolab" | "folletos" | "transferencias" | "videolab";
+type Vista = "caja" | "deposito" | "dashboard" | "inventario" | "leads" | "orders" | "fotolab" | "folletos" | "transferencias" | "videolab" | "catalogos";
 
 export default function Shell() {
   const [vista, setVista] = useState<Vista>("caja");
@@ -39,7 +39,6 @@ export default function Shell() {
   const [CierreCajaOpen, setCierreCajaOpen] = useState(false);
   const [CustomerModalOpen, setCustomerModalOpen] = useState(false);
   const [RegistrarProductoOpen, setRegistrarProductoOpen] = useState(false);
-  const [VerLeadsOpen, setVerLeadsOpen] = useState(false);
 
 
 
@@ -79,6 +78,8 @@ export default function Shell() {
               <VideoLabView />
             ) : vista === "transferencias" ? (
               <TransferenciasView />
+            ) : vista === "catalogos" ? (
+              <CatalogosView />
             ) : null}
           </div>
 

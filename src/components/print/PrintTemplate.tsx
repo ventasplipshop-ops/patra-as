@@ -1,7 +1,7 @@
 // src/components/print/PrintTemplate.tsx
 import React from "react";
-import logo from "./Plip.png"
 import { formatCurrency } from "../../actions/calculations";
+import PrintHeader from "./PrintHeader";
 
 interface PrintTemplateProps {
   customer: any;
@@ -17,35 +17,11 @@ export const PrintTemplate = React.forwardRef<HTMLDivElement, Omit<PrintTemplate
   ({ customer, user, cartItems, subtotal, taxType, total, presupuestoId }, printRef) => {
   return (
     <div ref={printRef} className="print-container bg-white p-6">
-      <header className="grid grid-cols-3 items-start border-b pb-2">
-        <div>
-          <img src={logo} alt="Logo PlipShop" className="h-20 object-contain" />
-        </div>
-        <div className="text-center">
-          <h1 className="text-s font-bold">PRESUPUESTO</h1>
-          <p className="text-xs">(No válido como factura)</p>
-        </div>
-        <div className="text-right text-xs">
-          <p>
-            Nº{" "}
-            <strong>
-              {presupuestoId
-                ? presupuestoId.toString().padStart(4, "0")
-                : "—"}
-            </strong>
-          </p>
-          <p>
-            Fecha:{" "}
-            <strong>{new Date().toLocaleDateString("es-AR")}</strong>
-          </p>
-        </div>
-        <div className="col-span-3 mt-2 text-xs text-gray-700">
-          <p><strong>Dirección:</strong> Av. Jujuy 50, C.A.B.A.</p>
-          <p><strong>Teléfono:</strong> 1128783367</p>
-          <p><strong>Correo:</strong> ventas.plipshop@gmail.com</p>
-          <p><strong>Web:</strong> www.plipshop.com.ar</p>
-        </div>
-      </header>
+      <PrintHeader
+        title="PRESUPUESTO"
+        subtitle="(No válido como factura)"
+        reference={presupuestoId ? presupuestoId.toString().padStart(4, "0") : "—"}
+      />
 
       <section className="grid grid-cols-2 gap-4 mt-3 p-2 border rounded text-xs">
         <div>

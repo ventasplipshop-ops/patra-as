@@ -26,6 +26,7 @@ import ImprimirEtiqueta from "../components/print/ImprimirEtiqueta";
 import { supabase } from "../lib/supabase";
 import Button from "../components/ui/Button";
 import CreateOrderButton from "../botonfantasma";
+import PriceListModal from "../components/PriceListModal";
 
 
 export default function CajaView({
@@ -75,6 +76,7 @@ export default function CajaView({
 
   const { effects, triggerEffect } = useEffects();
   const [presupuestoId, setPresupuestoId] = useState<number  | null>(null);
+  const [priceListOpen, setPriceListOpen] = useState(false);
   const imprimirRef = useRef<{ print: () => void }>(null); 
   const imprimirEtiquetaRef = useRef<{ print: () => void }>(null); 
 
@@ -504,6 +506,13 @@ const handlePreventa = async () => {
         total={total}
         presupuestoId={presupuestoId}
         />
+        <button
+          type="button"
+          onClick={() => setPriceListOpen(true)}
+          className="px-3 py-2 rounded-lg border border-blue-200 bg-blue-50 text-blue-800 text-sm font-medium hover:bg-blue-100 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200"
+        >
+          📄 Generar catálogo PDF
+        </button>
         
         {/* boton oculto de imprimir etiqueta */}
         <div style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
@@ -761,6 +770,7 @@ const handlePreventa = async () => {
             onClose={onClosePresupuestos}
             onSelectPresupuesto={(p) => handleLoadDraft(p)}
           />
+          <PriceListModal open={priceListOpen} onClose={() => setPriceListOpen(false)} />
           {showPaymentModal && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
               <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg w-96">
