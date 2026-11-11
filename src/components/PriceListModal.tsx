@@ -16,10 +16,11 @@ import { fetchCurrentProductsByIds } from "../modules/catalogos/catalogosApi";
 import { hydratePromotionImages, PROMOTION_IMAGE_TYPES, uploadPromotionImage, validatePromotionImage } from "../modules/catalogos/promotionImages";
 import TransferenciasPicker, { type TransferenciaReference } from "../modules/transferencias/TransferenciasPicker";
 import { catalogImageViewUrl } from "../modules/catalogos/transferenciasAdapter";
+import { uuidV4 } from "../utils/uuid";
 
 interface Props { open: boolean; onClose: () => void; initialCatalog?: CatalogDraft | null; onSave?: (catalog: CatalogDraft) => Promise<void>; }
 
-const emptyPromotion = (): CatalogPromotion => ({ id: crypto.randomUUID(), name: "", description: "" });
+const emptyPromotion = (): CatalogPromotion => ({ id: uuidV4(), name: "", description: "" });
 const defaultConfig = (): CatalogConfig => ({
   cta: "¿Qué necesitás esta semana? Escribinos y te ayudamos a armar tu pedido 💗",
   validity: getWeeklyValidity(),
